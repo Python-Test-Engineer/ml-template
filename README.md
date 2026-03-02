@@ -129,6 +129,38 @@ You'll get plots, CSVs, and a plain-text report — ready to review.
 
 ---
 
+## 🤖 Built-in AI Agents
+
+Alongside the three slash commands, the project ships a specialist sub-agent that Claude activates automatically when needed.
+
+### 🔬 Code Quality Reviewer
+
+```
+"Can you review the code before I commit?"
+```
+
+After `/execute` writes and runs your scripts, ask Claude to review the code — or it may offer proactively. The **code-quality-reviewer** agent inspects only what changed and checks for issues that genuinely matter in clinical data science:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  What it checks                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  ✅ Reproducibility   — random seeds, deterministic outputs     │
+│  ✅ Data contracts    — column names, dirty.csv written          │
+│  ✅ Clinical safety   — correct metrics, no data leakage        │
+│  ✅ Code correctness  — pandas ops, train/test separation       │
+│  ✅ Error handling    — clear failures, no silent drops         │
+│  ✅ Output validation — all files written, plots saved to disk  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+Issues are reported with **severity levels** (Critical / High / Medium / Low) and a suggested fix for each. The agent only reviews the diff — it won't speculate about code it hasn't seen.
+
+**Trigger it automatically** — it runs after every `/execute` completion.
+**Trigger it manually** — just ask: *"review the code"* or *"does this look okay?"*
+
+---
+
 ## 📁 Directory Layout
 
 ```
@@ -141,6 +173,9 @@ output/      ← All results, organised by run
   PROJECT_01/
   PROJECT_02/
   ...
+.claude/
+  commands/  ← Slash command definitions (/plan, /spec, /execute)
+  agents/    ← Specialist sub-agents (code-quality-reviewer, ...)
 ```
 
 ---

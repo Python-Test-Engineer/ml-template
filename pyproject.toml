@@ -5,11 +5,14 @@ description = "Multi-phase oncology data science project predicting neuroblastom
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fpdf2>=2.8.7",
     "lifelines>=0.30.0",
+    "markdown2>=2.5.4",
     "matplotlib>=3.10.8",
     "numpy>=2.4.2",
     "pandas>=3.0.1",
     "plotly>=6.5.2",
+    "reportlab>=4.4.10",
     "scikit-learn>=1.6.0",
     "scipy>=1.17.1",
     "seaborn>=0.13.2",
