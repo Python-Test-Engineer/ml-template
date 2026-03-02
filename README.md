@@ -83,6 +83,7 @@ Every run produces at minimum:
 
 ---
 
+
 ## Tips
 
 - **Rough ideas are fine.** The idea file does not need to be structured — a few sentences or bullet points are enough for `/plan` to work with.
