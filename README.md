@@ -1,92 +1,177 @@
-# Agentic ML Template
+# 🧠 Data Intelligence Researcher
 
-A structured template for AI-assisted oncology data science using Claude Code. Drop in a dataset, describe what you want to analyse, and follow a three-phase workflow — Claude handles the profiling, planning, coding, and execution.
-
----
-
-## Prerequisites
-
-- [Claude Code](https://claude.ai/code) installed and authenticated
-- [uv](https://docs.astral.sh/uv/) installed (`pip install uv` or see uv docs)
+> **AI-assisted data science — you bring the ideas, Claude does the heavy lifting.**
 
 ---
 
-## Setup
+## ⚡ TL;DR — It's This Simple
+
+**Got a dataset and a research question? Here's all you do:**
+
+```
+1.  Write your idea (rough notes are fine!)  →  _ideas/my-idea.md
+2.  /plan  _ideas/my-idea.md
+3.  /spec  _plans/my-idea.md
+4.  /execute  _specs/my-idea.md
+```
+
+That's it. Claude profiles your data, writes the code, runs it, and saves the results. No boilerplate. No setup. Just answers.
+
+---
+
+## 🗺️ The Workflow at a Glance
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│   📝 You write a brain dump          _ideas/my-idea.md         │
+│      (bullet points, rough notes,                               │
+│       a few sentences — anything!)                              │
+│                                                                 │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼  /plan _ideas/my-idea.md
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│   🔍 Claude reads your idea, profiles    _plans/my-idea.md     │
+│      the dataset, asks questions,                               │
+│      and writes a research plan                                 │
+│                                                                 │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼  /spec _plans/my-idea.md
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│   🏗️  Claude turns the plan into a      _specs/my-idea.md      │
+│      detailed technical spec — scripts,                         │
+│      data rules, outputs, run order                             │
+│                                                                 │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼  /execute _specs/my-idea.md
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│   🚀 Claude writes every script, runs    output/PROJECT_XX/    │
+│      them in order, fixes errors, and                           │
+│      delivers plots, CSVs, and a report                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ✍️ Step 0 — Write Your Idea
+
+Create a file in `_ideas/`. It can be as rough as you like:
+
+```markdown
+# Survival Analysis
+
+I want to know which gene expression features best predict
+patient survival in the neuroblastoma dataset.
+
+- Try Kaplan-Meier curves
+- Maybe a Cox proportional hazards model?
+- Compare high-risk vs low-risk groups
+- Dataset: data/neuroblastoma.csv
+```
+
+That's genuinely all you need. Claude will figure out the rest.
+
+---
+
+## 🔍 Step 1 — `/plan` (Claude thinks it through)
+
+```
+/plan _ideas/my-idea.md
+```
+
+Claude will:
+- 📂 Read your idea file
+- 📊 Profile the dataset (shape, columns, missing values, distributions)
+- 💬 Ask any clarifying questions
+- 📋 Save a structured research plan to `_plans/my-idea.md`
+
+**Review the plan** — this is where you steer the direction before any code is written.
+
+---
+
+## 🏗️ Step 2 — `/spec` (Claude architects the solution)
+
+```
+/spec _plans/my-idea.md
+```
+
+Claude will:
+- 🗂️ Design the script architecture
+- 📐 Define data contracts and cleaning rules
+- 📁 List every output file that will be produced
+- 💾 Save a detailed technical spec to `_specs/my-idea.md`
+
+**Review the spec** — this is the blueprint. Catch any issues here before code is written.
+
+---
+
+## 🚀 Step 3 — `/execute` (Claude builds and runs everything)
+
+```
+/execute _specs/my-idea.md
+```
+
+Claude will:
+- 💻 Write all Python scripts into `src/`
+- ▶️ Run them in the correct order
+- 🔧 Fix any errors automatically
+- ✅ Validate that all expected outputs exist
+- 📁 Save everything to `output/PROJECT_XX/`
+
+You'll get plots, CSVs, and a plain-text report — ready to review.
+
+---
+
+## 📁 Directory Layout
+
+```
+_ideas/      ← Start here: your research ideas
+_plans/      ← Claude's research plans (output of /plan)
+_specs/      ← Claude's technical specs (output of /spec)
+src/         ← Python scripts (written by /execute)
+data/        ← Your datasets (gitignored, never modified)
+output/      ← All results, organised by run
+  PROJECT_01/
+  PROJECT_02/
+  ...
+```
+
+---
+
+## 🛠️ Setup
+
+**Prerequisites:** [Claude Code](https://claude.ai/code) + [uv](https://docs.astral.sh/uv/)
 
 ```bash
 uv sync
 ```
 
-That's it. Claude will install any additional packages it needs automatically as it works.
+Done. Claude installs any extra packages it needs automatically as it works.
 
 ---
 
-## Workflow
-
-The project follows three phases, each driven by a slash command.
-
-### Phase 1 — Plan
-```
-/plan _ideas/<filename>
-```
-Write a short idea file in `_ideas/` describing what you want to explore — it can be rough notes, bullet points, or a few sentences. Claude will read it, profile the dataset, ask any clarifying questions, and produce a structured research plan in `_plans/`.
-
-### Phase 2 — Spec
-```
-/spec _plans/<filename>
-```
-Claude reads the plan and writes a detailed technical spec in `_specs/` — covering script architecture, data contracts, dirty-row rules, output files, and the exact run order. Review this before proceeding; it is the contract for what gets built.
-
-### Phase 3 — Execute
-```
-/execute _specs/<filename>
-```
-Claude implements all scripts from the spec into `src/`, runs them in order, fixes any errors, and validates that all expected outputs exist in `output/PROJECT_XX/`.
-
----
-
-## Directory Layout
-
-```
-_ideas/      Your research ideas (input to /plan)
-_plans/      Research plans produced by /plan (input to /spec)
-_specs/      Technical specs produced by /spec (input to /execute)
-src/         Python scripts written by /execute
-data/        Raw datasets — gitignored, never modified
-output/      All generated outputs (plots, CSVs, reports)
-  PROJECT_01/
-  PROJECT_02/
-  ...
-.claude/
-  commands/  Slash command definitions (/plan, /spec, /execute)
-  agents/    Specialist sub-agents (e.g. code-quality-reviewer)
-```
-
----
-
-## Datasets
-
-Place datasets in the `data/` folder. They are **gitignored** — never committed to the repo.
-
-Reference a dataset in your idea file by filename, e.g. `data/neuroblastoma.csv`. Claude will locate and profile it automatically during the plan phase.
-
----
-
-## Output
-
-Each project run writes to its own subfolder: `output/PROJECT_01`, `output/PROJECT_02`, etc. The next available number is always used automatically.
+## 📦 What You Get in `output/PROJECT_XX/`
 
 Every run produces at minimum:
-- `dirty.csv` — rows removed during cleaning, with a `reason` column
-- Plot files (`.png`)
-- A plain-text `report.txt` summarising results
+
+| File | Description |
+|------|-------------|
+| `dirty.csv` | Rows removed during cleaning, with a `reason` column |
+| `*.png` | Plots and visualisations |
+| `report.txt` | Plain-English summary of results |
 
 ---
 
+## 💡 Tips
 
-## Tips
-
-- **Rough ideas are fine.** The idea file does not need to be structured — a few sentences or bullet points are enough for `/plan` to work with.
-- **Review the spec before executing.** The spec phase is your chance to catch misunderstandings before any code is written.
-- **Use screenshots.** Paste an image directly into the Claude Code terminal, or reference a saved file with `@filename`. Claude can read charts, error messages, and UI screenshots to help diagnose issues.
-- **Just ask.** If you are unsure what to do at any point, describe the situation in plain language and Claude will advise.
+- **Rough ideas are fine.** A few bullet points or sentences is all `/plan` needs to get started.
+- **Review before you execute.** The spec phase is your chance to catch misunderstandings before any code is written.
+- **Use screenshots.** Paste an image directly into Claude Code — it can read charts, error messages, and UI screenshots to diagnose issues.
+- **Just ask.** Unsure what to do? Describe the situation in plain language and Claude will advise.

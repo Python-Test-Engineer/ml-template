@@ -1,8 +1,0 @@
-date,region,product,units_sold,revenue,cost,reason
-2024-02-04,East,Widget A,163,641.43,1834.88,cost_exceeds_revenue
-2024-04-07,East,Widget A,80,846.41,1510.79,cost_exceeds_revenue
-2024-04-21,North,Widget B,97,1225.5,1338.15,cost_exceeds_revenue
-2024-08-18,West,Widget B,171,531.28,1886.11,cost_exceeds_revenue
-2024-09-15,West,Gadget X,71,1039.39,1864.45,cost_exceeds_revenue
-2024-11-17,West,Widget B,10,1633.02,1814.99,cost_exceeds_revenue
-2024-12-15,South,Widget A,36,665.99,828.58,cost_exceeds_revenue
