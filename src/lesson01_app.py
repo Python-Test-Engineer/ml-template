@@ -806,7 +806,7 @@ def app_server(input, output, session):
                     window._creditsScheduled = true;
                     setTimeout(function() {
                         window.location.href = 'http://127.0.0.1:8002/';
-                    }, 30000);
+                    }, 5000);
                 })();
                 """
             ),
