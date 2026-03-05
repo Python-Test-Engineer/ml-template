@@ -182,11 +182,20 @@
       padding-right: 10%;
     }
 
-    /* ── End card ── */
+    /* ── End card (fixed, fades in after credits) ── */
     .end-card {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       text-align: center;
-      margin-top: 20px;
-      margin-bottom: 80px;
+      opacity: 0;
+      animation: end-fade-in 2s ease-out 25s forwards;
+    }
+
+    @keyframes end-fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
     .end-card .the-end {
@@ -197,14 +206,6 @@
       text-transform: uppercase;
       text-shadow: 0 0 30px rgba(240, 192, 64, 0.4);
       margin-bottom: 20px;
-    }
-
-    .end-card .tagline {
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      color: #555;
-      letter-spacing: 0.12em;
-      font-style: italic;
     }
 
     /* ── Bottom colour bar ── */
@@ -298,15 +299,15 @@
 
     <div class="divider"></div>
 
-    <!-- The End -->
-    <div class="end-card">
-      <div class="the-end">The End</div>
-      <div style="font-size:20px;color:#f7eeee;"">" Every dataset hides a secret — case closed."</div>
-      </div>
-
       <div class="colour-bar-bottom"></div>
 
     </div>
+
+  <!-- The End — fixed centre, fades in after credits scroll away -->
+  <div class="end-card">
+    <div class="the-end">The End</div>
+    <div style="font-size:20px;color:#f7eeee;">"Every dataset hides a secret — case closed."</div>
+  </div>
 
 </body>
 
