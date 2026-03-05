@@ -820,6 +820,7 @@ def app_server(input, output, session):
                 ui.div(
                     ui.div("📊 Chart", style="font-weight:bold;margin-bottom:10px;color:#333;"),
                     ui.div(ui.HTML(fig_html), style="min-height:420px;"),
+                    style="display:flex;flex-direction:column;justify-content:flex-end;height:100%;",
                 ),
                 col_widths=[6, 6],
             ),
