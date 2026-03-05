@@ -129,13 +129,13 @@ AGENT_RICH_COLORS = {
 }
 
 
-def _run_investigation() -> None:
+def _run_investigation(interval: float = 1.0) -> None:
     """Compute everything instantly; stagger display via display_after times."""
     global _message_log, _state_schedule, _results, _done_after
 
     console.print(Panel(
-        "[bold white]🕵️  Data Science Detective Agency[/]\n"
-        "[dim]Generating investigation plan — messages will stream to browser every 1 s[/]",
+        f"[bold white]🕵️  Data Science Detective Agency[/]\n"
+        f"[dim]Generating investigation plan — messages stream every {interval:.0f} s[/]",
         style="on dark_blue", border_style="bright_blue"
     ))
 
@@ -151,10 +151,10 @@ def _run_investigation() -> None:
         style, label = MSG_STYLE.get(msg.msg_type, ("white", msg.msg_type.upper()))
         sender_color = AGENT_RICH_COLORS.get(msg.sender, "white")
         console.print(
-            f"  [dim]+{delay:4.0f}s[/]  [{sender_color}]{AGENT_ICONS.get(msg.sender,'🤖')} {msg.sender:<12}[/]"
+            f"  [dim]+{delay:5.1f}s[/]  [{sender_color}]{AGENT_ICONS.get(msg.sender,'🤖')} {msg.sender:<12}[/]"
             f"[dim]→ {msg.recipient:<12}[/]  [{style}]{label}[/]  [white]{msg.content}[/]"
         )
-        delay += 1.0
+        delay += interval
 
     def state_now(agent: str, state: str) -> None:
         sched.append((t0 + delay, agent, state))
@@ -407,6 +407,7 @@ def _agent_status_card(agent: str, status: str) -> ui.Tag:
 # ---------------------------------------------------------------------------
 
 app_ui = ui.page_fluid(
+    ui.busy_indicators.use(spinners=False, pulse=False, fade=False),
     ui.tags.style("""
         body { background: #F0F2F5; font-family: 'Segoe UI', sans-serif; }
         /* Suppress Shiny's recalculating fade */
@@ -465,8 +466,18 @@ app_ui = ui.page_fluid(
     ui.div(
         ui.input_action_button("start_btn", "▶ Start Investigation", class_="start-btn"),
         ui.input_action_button("clear_btn", "✕ Clear", class_="clear-btn"),
+        ui.tags.span(
+            ui.input_select(
+                "interval", None,
+                choices={"1": "1 s / message", "2": "2 s / message",
+                         "3": "3 s / message", "4": "4 s / message", "5": "5 s / message"},
+                selected="1",
+                width="140px",
+            ),
+            style="display:inline-block;vertical-align:middle;margin-left:14px;"
+        ),
         ui.output_text("status_text"),
-        style="padding: 0 16px 16px;"
+        style="padding: 0 16px 16px; display:flex; align-items:center; gap:0;"
     ),
 
     ui.layout_columns(
@@ -516,6 +527,19 @@ app_ui = ui.page_fluid(
 
 def app_server(input, output, session):
 
+    # Single shared clock — all outputs depend on this one reactive, so they
+    # all re-render together in the same flush, eliminating staggered jank.
+    # isolate() prevents _tick from subscribing to clock (avoids infinite loop).
+    clock = reactive.Value(0)
+
+    @reactive.effect
+    def _tick():
+        reactive.invalidate_later(float(input.interval()))
+        with reactive.isolate():
+            clock.set(clock() + 1)
+
+    # ── helpers ──────────────────────────────────────────────────────────────
+
     def _visible_msgs() -> list[AgentMessage]:
         now = time.time()
         return [m for m in _message_log if m.display_after <= now]
@@ -534,18 +558,19 @@ def app_server(input, output, session):
     def _still_running() -> bool:
         return _started and not _is_complete()
 
+    # ── outputs ──────────────────────────────────────────────────────────────
+
     @output
     @render.ui
     def task_queue():
-        reactive.invalidate_later(1.0)
-        states = _current_states()
-        return ui.div(*[_task_card(a, states[a])
+        clock()   # subscribe to shared clock
+        return ui.div(*[_task_card(a, _current_states()[a])
                         for a in ["DataCleaner", "Statistician", "Visualizer", "Reporter"]])
 
     @output
     @render.ui
     def message_log():
-        reactive.invalidate_later(1.0)
+        clock()
         visible = _visible_msgs()
         if not visible:
             return ui.div(
@@ -557,15 +582,14 @@ def app_server(input, output, session):
     @output
     @render.ui
     def agent_cards():
-        reactive.invalidate_later(1.0)
-        states = _current_states()
-        return ui.div(*[_agent_status_card(a, states[a])
+        clock()
+        return ui.div(*[_agent_status_card(a, _current_states()[a])
                         for a in ["DataCleaner", "Statistician", "Visualizer", "Reporter"]])
 
     @output
     @render.text
     def status_text():
-        reactive.invalidate_later(1.0)
+        clock()
         if _still_running():
             return "   ⚡ Investigation in progress..."
         if _is_complete():
@@ -575,7 +599,7 @@ def app_server(input, output, session):
     @output
     @render.ui
     def results_panel():
-        reactive.invalidate_later(1.0)
+        clock()
         if not _is_complete():
             return ui.div()
         report_html = markdown2.markdown(_results.get("report", ""))
@@ -594,6 +618,8 @@ def app_server(input, output, session):
             class_="results-panel"
         )
 
+    # ── actions ──────────────────────────────────────────────────────────────
+
     @reactive.effect
     @reactive.event(input.start_btn)
     def _start():
@@ -601,7 +627,7 @@ def app_server(input, output, session):
         if _started:
             return
         _started = True
-        _run_investigation()
+        _run_investigation(float(input.interval()))
 
     @reactive.effect
     @reactive.event(input.clear_btn)
