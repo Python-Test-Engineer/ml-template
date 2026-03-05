@@ -447,6 +447,13 @@ app_ui = ui.page_fluid(
             padding: 10px 32px !important; border-radius: 8px !important;
             border: none !important; cursor: pointer !important;
         }
+        .clear-btn {
+            background: #95A5A6 !important; color: white !important;
+            font-weight: bold !important; font-size: 1.1em !important;
+            padding: 10px 24px !important; border-radius: 8px !important;
+            border: none !important; cursor: pointer !important;
+            margin-left: 10px !important;
+        }
     """),
 
     ui.div(
@@ -457,6 +464,7 @@ app_ui = ui.page_fluid(
 
     ui.div(
         ui.input_action_button("start_btn", "▶ Start Investigation", class_="start-btn"),
+        ui.input_action_button("clear_btn", "✕ Clear", class_="clear-btn"),
         ui.output_text("status_text"),
         style="padding: 0 16px 16px;"
     ),
@@ -582,6 +590,12 @@ def app_server(input, output, session):
             return
         _started = True
         _run_investigation()
+
+    @reactive.effect
+    @reactive.event(input.clear_btn)
+    def _clear():
+        _reset_state()
+        console.print("[dim]── Page cleared, ready to run again ──[/]")
 
 
 app = App(app_ui, app_server)
