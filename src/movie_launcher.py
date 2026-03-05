@@ -16,19 +16,30 @@ from pathlib import Path
 
 SCENE1_PORT = 8001
 SCENE2_PORT = 8000
-SCENE1_HTML = Path(__file__).parent / "movie_scene1.html"
+SRC_DIR = Path(__file__).parent
+
+ROUTES = {
+    "/":        SRC_DIR / "movie_scene1.html",
+    "/credits": SRC_DIR / "movie_scene2.html",
+}
 
 
 # ---------------------------------------------------------------------------
-# Scene 1 — minimal HTTP server that serves movie_scene1.html for any request
+# Static server — serves movie_scene1.html and movie_scene2.html
 # ---------------------------------------------------------------------------
 
 class Scene1Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
+        path = self.path.split("?")[0].rstrip("/")
+        print(f"  [static] GET {self.path!r} -> path={path!r}")
+        if "credits" in path:
+            html_file = SRC_DIR / "movie_scene2.html"
+        else:
+            html_file = SRC_DIR / "movie_scene1.html"
         try:
-            content = SCENE1_HTML.read_bytes()
+            content = html_file.read_bytes()
         except FileNotFoundError:
-            self.send_error(404, "movie_scene1.html not found")
+            self.send_error(404, f"{html_file.name} not found")
             return
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")

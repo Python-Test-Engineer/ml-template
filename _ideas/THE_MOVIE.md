@@ -16,4 +16,8 @@ Once it reaches full page in size it fades out to scene 2
 
 ### Scene 2
 
-The app `src\lesson01_app.py` appears and the user and the START sequence with default 2 seconds of message dealy is activated.
+The app `src\lesson01_app.py` appears and the user and the START sequence with default 2 seconds of message delay is activated.
+
+### Scene 3
+
+We have a final outro like at the movies after we have seen the final report visible.

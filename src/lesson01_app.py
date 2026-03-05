@@ -418,16 +418,21 @@ app_ui = ui.page_fluid(
     ui.busy_indicators.use(spinners=False, pulse=False, fade=False),
     ui.tags.script("""
         (function() {
-            var p = new URLSearchParams(window.location.search);
-            if (p.get('autostart') === '1') {
-                $(document).on('shiny:connected', function() {
-                    setTimeout(function() {
-                        var sel = document.getElementById('interval');
-                        if (sel) { sel.value = '2'; sel.dispatchEvent(new Event('change')); }
-                        document.getElementById('start_btn').click();
-                    }, 500);
-                });
-            }
+            // Watch for the results panel to appear, scroll to it, then roll credits
+            var credited = false;
+            var resultsObserver = new MutationObserver(function() {
+                if (credited) return;
+                if (!document.querySelector('.results-panel')) return;
+                credited = true;
+                resultsObserver.disconnect();
+                setTimeout(function() {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }, 200);
+                setTimeout(function() {
+                    window.location.href = 'http://127.0.0.1:8001/credits';
+                }, 3200);
+            });
+            resultsObserver.observe(document.body, { childList: true, subtree: true });
         })();
     """),
     ui.tags.style("""
@@ -504,11 +509,6 @@ app_ui = ui.page_fluid(
 
     ui.layout_columns(
         ui.div(
-            ui.div("📋 Task Queue", class_="panel-title"),
-            ui.output_ui("task_queue"),
-            style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;"
-        ),
-        ui.div(
             ui.div("💬 Live Message Log", class_="panel-title"),
             ui.div(ui.output_ui("message_log"), class_="msg-log", id="msg-log-div"),
             ui.tags.script("""
@@ -516,15 +516,12 @@ app_ui = ui.page_fluid(
                     var d = document.getElementById('msg-log-div');
                     if (!d) return;
 
-                    // True when user is near the bottom (or hasn't scrolled at all)
                     var pinned = true;
 
-                    // Update pinned state when user scrolls manually
                     d.addEventListener('scroll', function() {
                         pinned = (d.scrollHeight - d.scrollTop - d.clientHeight) < 80;
                     });
 
-                    // Scroll immediately after Shiny injects new content
                     var observer = new MutationObserver(function() {
                         if (pinned) d.scrollTop = d.scrollHeight;
                     });
@@ -538,7 +535,7 @@ app_ui = ui.page_fluid(
             ui.output_ui("agent_cards"),
             style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;"
         ),
-        col_widths=[3, 6, 3],
+        col_widths=[9, 3],
     ),
 
     ui.output_ui("results_panel"),
