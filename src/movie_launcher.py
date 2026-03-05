@@ -16,47 +16,40 @@ from pathlib import Path
 
 SCENE1_PORT = 8001
 SCENE2_PORT = 8000
+CREDITS_PORT = 8002
 SRC_DIR = Path(__file__).parent
 
-ROUTES = {
-    "/":        SRC_DIR / "movie_scene1.html",
-    "/credits": SRC_DIR / "movie_scene2.html",
-}
-
 
 # ---------------------------------------------------------------------------
-# Static server — serves movie_scene1.html and movie_scene2.html
+# Static file server factory — one instance per HTML file
 # ---------------------------------------------------------------------------
 
-class Scene1Handler(http.server.BaseHTTPRequestHandler):
-    def do_GET(self):
-        path = self.path.split("?")[0].rstrip("/")
-        print(f"  [static] GET {self.path!r} -> path={path!r}")
-        if "credits" in path:
-            html_file = SRC_DIR / "movie_scene2.html"
-        else:
-            html_file = SRC_DIR / "movie_scene1.html"
-        try:
-            content = html_file.read_bytes()
-        except FileNotFoundError:
-            self.send_error(404, f"{html_file.name} not found")
-            return
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(content)))
-        self.end_headers()
-        self.wfile.write(content)
+def _make_handler(html_file: Path):
+    class _Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            try:
+                content = html_file.read_bytes()
+            except FileNotFoundError:
+                self.send_error(404, f"{html_file.name} not found")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
 
-    def log_message(self, fmt, *args):  # silence request logs
-        pass
+        def log_message(self, fmt, *args):
+            pass
+
+    return _Handler
 
 
-def _run_scene1_server() -> None:
+def _run_static_server(port: int, html_file: Path) -> None:
     try:
-        server = http.server.HTTPServer(("127.0.0.1", SCENE1_PORT), Scene1Handler)
+        server = http.server.HTTPServer(("127.0.0.1", port), _make_handler(html_file))
         server.serve_forever()
     except Exception as exc:
-        print(f"  Scene 1 server error: {exc}")
+        print(f"  Static server on port {port} error: {exc}")
 
 
 # ---------------------------------------------------------------------------
@@ -92,12 +85,22 @@ def _wait_for_scene2(timeout: float = 15.0) -> bool:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    print("  Starting Scene 2 (Shiny app) on port", SCENE2_PORT, "...")
+    print(f"  Starting Shiny app on port {SCENE2_PORT} ...")
     scene2_proc = _run_scene2_server()
 
-    print("  Starting Scene 1 (poster) on port", SCENE1_PORT, "...")
-    t = threading.Thread(target=_run_scene1_server, daemon=True)
-    t.start()
+    print(f"  Starting Scene 1 (poster) on port {SCENE1_PORT} ...")
+    threading.Thread(
+        target=_run_static_server,
+        args=(SCENE1_PORT, SRC_DIR / "movie_scene1.html"),
+        daemon=True,
+    ).start()
+
+    print(f"  Starting Credits on port {CREDITS_PORT} ...")
+    threading.Thread(
+        target=_run_static_server,
+        args=(CREDITS_PORT, SRC_DIR / "movie_scene2.html"),
+        daemon=True,
+    ).start()
 
     print("  Waiting for Shiny to be ready ...")
     ready = _wait_for_scene2()

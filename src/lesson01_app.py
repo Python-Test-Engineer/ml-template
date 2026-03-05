@@ -5,6 +5,7 @@ Data Science Detective Agency — Educational Shiny App
 Agent logic runs synchronously and assigns future display_after timestamps.
 The UI polls every 1s and reveals messages as time passes — no async needed.
 """
+
 from __future__ import annotations
 
 import random
@@ -30,10 +31,36 @@ console = Console()
 
 SUBJECTS = ["Math", "Science", "English", "History", "Art"]
 STUDENT_NAMES = [
-    "Alice", "Bob", "Carol", "David", "Eva", "Frank", "Grace", "Hiro",
-    "Iris", "Jake", "Kira", "Leo", "Mia", "Noah", "Olivia", "Pete",
-    "Quinn", "Rosa", "Sam", "Tina", "Uma", "Vince", "Wendy", "Xander",
-    "Yara", "Zoe", "Amir", "Bella", "Caden", "Dana",
+    "Alice",
+    "Bob",
+    "Carol",
+    "David",
+    "Eva",
+    "Frank",
+    "Grace",
+    "Hiro",
+    "Iris",
+    "Jake",
+    "Kira",
+    "Leo",
+    "Mia",
+    "Noah",
+    "Olivia",
+    "Pete",
+    "Quinn",
+    "Rosa",
+    "Sam",
+    "Tina",
+    "Uma",
+    "Vince",
+    "Wendy",
+    "Xander",
+    "Yara",
+    "Zoe",
+    "Amir",
+    "Bella",
+    "Caden",
+    "Dana",
 ]
 
 
@@ -60,50 +87,50 @@ def generate_grades_df() -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 AGENT_COLORS = {
-    "Manager":     "#4A90D9",
+    "Manager": "#4A90D9",
     "DataCleaner": "#E67E22",
-    "Statistician":"#27AE60",
-    "Visualizer":  "#8E44AD",
-    "Reporter":    "#C0392B",
-    "SYSTEM":      "#7F8C8D",
+    "Statistician": "#27AE60",
+    "Visualizer": "#8E44AD",
+    "Reporter": "#C0392B",
+    "SYSTEM": "#7F8C8D",
 }
 AGENT_ICONS = {
-    "Manager":     "🕵️",
+    "Manager": "🕵️",
     "DataCleaner": "🧹",
-    "Statistician":"📊",
-    "Visualizer":  "🎨",
-    "Reporter":    "📝",
+    "Statistician": "📊",
+    "Visualizer": "🎨",
+    "Reporter": "📝",
 }
 
 
 @dataclass
 class AgentMessage:
-    sender:       str
-    recipient:    str
-    content:      str
-    msg_type:     str   # "task" | "update" | "result" | "complete"
-    timestamp:    float = field(default_factory=time.time)
-    display_after: float = 0.0   # wall-clock time when this message becomes visible
+    sender: str
+    recipient: str
+    content: str
+    msg_type: str  # "task" | "update" | "result" | "complete"
+    timestamp: float = field(default_factory=time.time)
+    display_after: float = 0.0  # wall-clock time when this message becomes visible
 
 
 # ---------------------------------------------------------------------------
 # 3. Shared state
 # ---------------------------------------------------------------------------
 
-_message_log:       list[AgentMessage] = []
-_state_schedule:    list[tuple[float, str, str]] = []  # (time, agent, state)
-_results:           dict[str, Any] = {}
-_started:           bool = False
-_done_after:        float = 0.0   # time when last message appears
+_message_log: list[AgentMessage] = []
+_state_schedule: list[tuple[float, str, str]] = []  # (time, agent, state)
+_results: dict[str, Any] = {}
+_started: bool = False
+_done_after: float = 0.0  # time when last message appears
 
 
 def _reset_state() -> None:
     global _message_log, _state_schedule, _results, _started, _done_after
-    _message_log    = []
+    _message_log = []
     _state_schedule = []
-    _results        = {}
-    _started        = False
-    _done_after     = 0.0
+    _results = {}
+    _started = False
+    _done_after = 0.0
 
 
 _reset_state()
@@ -114,18 +141,18 @@ _reset_state()
 # ---------------------------------------------------------------------------
 
 MSG_STYLE = {
-    "task":     ("bold blue",    "📋 TASK"),
-    "update":   ("yellow",       "💬 UPDATE"),
-    "result":   ("bold green",   "📤 RESULT"),
+    "task": ("bold blue", "📋 TASK"),
+    "update": ("yellow", "💬 UPDATE"),
+    "result": ("bold green", "📤 RESULT"),
     "complete": ("bold magenta", "🏁 DONE"),
 }
 AGENT_RICH_COLORS = {
-    "Manager":     "bright_blue",
+    "Manager": "bright_blue",
     "DataCleaner": "dark_orange",
-    "Statistician":"green",
-    "Visualizer":  "magenta",
-    "Reporter":    "red",
-    "SYSTEM":      "grey62",
+    "Statistician": "green",
+    "Visualizer": "magenta",
+    "Reporter": "red",
+    "SYSTEM": "grey62",
 }
 
 
@@ -133,13 +160,16 @@ def _run_investigation(interval: float = 1.0) -> None:
     """Compute everything instantly; stagger display via display_after times."""
     global _message_log, _state_schedule, _results, _done_after
 
-    console.print(Panel(
-        f"[bold white]🕵️  Data Science Detective Agency[/]\n"
-        f"[dim]Generating investigation plan — messages stream every {interval:.0f} s[/]",
-        style="on dark_blue", border_style="bright_blue"
-    ))
+    console.print(
+        Panel(
+            f"[bold white]🕵️  The Data Science Detective Agency[/]\n"
+            f"[dim]Generating investigation plan — messages stream every {interval:.0f} s[/]",
+            style="on dark_blue",
+            border_style="bright_blue",
+        )
+    )
 
-    t0    = time.time()
+    t0 = time.time()
     msgs: list[AgentMessage] = []
     sched: list[tuple[float, str, str]] = []
     delay = 0.0
@@ -164,26 +194,55 @@ def _run_investigation(interval: float = 1.0) -> None:
     def state_now(agent: str, state: str) -> None:
         sched.append((t0 + delay, agent, state))
         icons = {"working": "⚡", "done": "✅"}
-        console.print(f"  [dim]       [/]  [dim italic]{agent} → {icons.get(state,'')} {state.upper()}[/]")
+        console.print(
+            f"  [dim]       [/]  [dim italic]{agent} → {icons.get(state,'')} {state.upper()}[/]"
+        )
 
     df = generate_grades_df()
-    console.print(f"\n[bold]Dataset:[/] {len(df)} rows × {len(SUBJECTS)} subjects generated\n")
+    console.print(
+        f"\n[bold]Dataset:[/] {len(df)} rows × {len(SUBJECTS)} subjects generated\n"
+    )
 
     # ── Manager intro ───────────────────────────────────────────────────────
-    emit(AgentMessage("SYSTEM",   "ALL", "🚀 Investigation started! Manager Agent is online.", "task"))
-    emit(AgentMessage("Manager",  "ALL",
-         f"Dataset loaded: {len(df)} students, {len(SUBJECTS)} subjects. Dispatching sub-agents...", "update"))
+    emit(
+        AgentMessage(
+            "SYSTEM",
+            "ALL",
+            "🚀 Investigation started! Manager Agent is online.",
+            "task",
+        )
+    )
+    emit(
+        AgentMessage(
+            "Manager",
+            "ALL",
+            f"Dataset loaded: {len(df)} students, {len(SUBJECTS)} subjects. Dispatching sub-agents...",
+            "update",
+        )
+    )
 
     # ── DataCleaner ─────────────────────────────────────────────────────────
     console.print("\n[bold dark_orange]── DataCleaner Phase ──[/]")
     state_now("DataCleaner", "working")
-    emit(AgentMessage("Manager",     "DataCleaner",
-         "Investigate the dataset for missing values and anomalies.", "task"))
-    emit(AgentMessage("DataCleaner", "ALL",
-         "Starting data quality scan on 30-row dataset...", "update"))
+    emit(
+        AgentMessage(
+            "Manager",
+            "DataCleaner",
+            "Investigate the dataset for missing values and anomalies.",
+            "task",
+        )
+    )
+    emit(
+        AgentMessage(
+            "DataCleaner",
+            "ALL",
+            "Starting data quality scan on 30-row dataset...",
+            "update",
+        )
+    )
 
     dirty_rows: list[int] = []
-    reasons:    list[str] = []
+    reasons: list[str] = []
     for idx, row in df.iterrows():
         row_reasons: list[str] = []
         if pd.isna(row.get("name")):
@@ -198,81 +257,151 @@ def _run_investigation(interval: float = 1.0) -> None:
             dirty_rows.append(idx)
             reasons.append("; ".join(row_reasons))
 
-    console.print(f"  [dim]Dirty rows found: {len(dirty_rows)} — {'; '.join(reasons) if reasons else 'none'}[/]")
+    console.print(
+        f"  [dim]Dirty rows found: {len(dirty_rows)} — {'; '.join(reasons) if reasons else 'none'}[/]"
+    )
     clean_df = df.drop(index=dirty_rows).reset_index(drop=True)
-    emit(AgentMessage("DataCleaner", "Manager",
-         f"Found {len(dirty_rows)} dirty row(s): {', '.join(reasons)}. Flagging for removal.", "result"))
+    emit(
+        AgentMessage(
+            "DataCleaner",
+            "Manager",
+            f"Found {len(dirty_rows)} dirty row(s): {', '.join(reasons)}. Flagging for removal.",
+            "result",
+        )
+    )
     state_now("DataCleaner", "done")
-    emit(AgentMessage("DataCleaner", "ALL",
-         f"Done. Clean dataset has {len(clean_df)} rows.", "complete"))
+    emit(
+        AgentMessage(
+            "DataCleaner",
+            "ALL",
+            f"Done. Clean dataset has {len(clean_df)} rows.",
+            "complete",
+        )
+    )
 
     # ── Statistician ────────────────────────────────────────────────────────
     console.print("\n[bold green]── Statistician Phase ──[/]")
-    emit(AgentMessage("Manager", "ALL", "DataCleaner done. Dispatching Statistician...", "update"))
+    emit(
+        AgentMessage(
+            "Manager", "ALL", "DataCleaner done. Dispatching Statistician...", "update"
+        )
+    )
     state_now("Statistician", "working")
-    emit(AgentMessage("Manager",      "Statistician",
-         "Compute summary statistics on the clean dataset.", "task"))
+    emit(
+        AgentMessage(
+            "Manager",
+            "Statistician",
+            "Compute summary statistics on the clean dataset.",
+            "task",
+        )
+    )
     emit(AgentMessage("Statistician", "ALL", "Crunching numbers...", "update"))
 
-    numeric      = clean_df[SUBJECTS]
-    means        = numeric.mean().round(2).to_dict()
-    stds         = numeric.std().round(2).to_dict()
-    top_subject  = max(means, key=lambda k: means[k])
+    numeric = clean_df[SUBJECTS]
+    means = numeric.mean().round(2).to_dict()
+    stds = numeric.std().round(2).to_dict()
+    top_subject = max(means, key=lambda k: means[k])
     overall_mean = round(float(numeric.values.mean()), 2)
 
     stats_table = Table("Subject", "Mean", "Std", box=box.SIMPLE, style="dim")
     for subj in SUBJECTS:
         stats_table.add_row(subj, str(means[subj]), str(stds[subj]))
     console.print(stats_table)
-    console.print(f"  [green]Overall mean: {overall_mean}  |  Top subject: {top_subject}[/]")
+    console.print(
+        f"  [green]Overall mean: {overall_mean}  |  Top subject: {top_subject}[/]"
+    )
 
-    emit(AgentMessage("Statistician", "Manager",
-         f"Overall mean grade: {overall_mean}. Top subject: {top_subject} "
-         f"(avg {means[top_subject]}). Means: "
-         + ", ".join(f"{s}={v}" for s, v in means.items()), "result"))
+    emit(
+        AgentMessage(
+            "Statistician",
+            "Manager",
+            f"Overall mean grade: {overall_mean}. Top subject: {top_subject} "
+            f"(avg {means[top_subject]}). Means: "
+            + ", ".join(f"{s}={v}" for s, v in means.items()),
+            "result",
+        )
+    )
     state_now("Statistician", "done")
     emit(AgentMessage("Statistician", "ALL", "Statistics complete!", "complete"))
 
     # ── Visualizer ──────────────────────────────────────────────────────────
     console.print("\n[bold magenta]── Visualizer Phase ──[/]")
-    emit(AgentMessage("Manager", "ALL", "Stats ready. Dispatching Visualizer...", "update"))
+    emit(
+        AgentMessage(
+            "Manager", "ALL", "Stats ready. Dispatching Visualizer...", "update"
+        )
+    )
     state_now("Visualizer", "working")
-    emit(AgentMessage("Manager",    "Visualizer",
-         "Produce a bar chart of average grades per subject.", "task"))
+    emit(
+        AgentMessage(
+            "Manager",
+            "Visualizer",
+            "Produce a bar chart of average grades per subject.",
+            "task",
+        )
+    )
     emit(AgentMessage("Visualizer", "ALL", "Building Plotly figure...", "update"))
 
     bar_colors = ["#4A90D9", "#E67E22", "#27AE60", "#8E44AD", "#C0392B"]
-    fig = go.Figure(go.Bar(
-        x=list(means.keys()),
-        y=list(means.values()),
-        marker_color=bar_colors,
-        text=[f"{v:.1f}" for v in means.values()],
-        textposition="outside",
-    ))
+    fig = go.Figure(
+        go.Bar(
+            x=list(means.keys()),
+            y=list(means.values()),
+            marker_color=bar_colors,
+            text=[f"{v:.1f}" for v in means.values()],
+            textposition="outside",
+        )
+    )
     fig.update_layout(
         title="Average Grade by Subject",
-        xaxis_title="Subject", yaxis_title="Average Grade",
-        yaxis_range=[0, 110], plot_bgcolor="white", paper_bgcolor="#F8F9FA",
-        font=dict(family="monospace", size=13), title_font_size=16,
+        xaxis_title="Subject",
+        yaxis_title="Average Grade",
+        yaxis_range=[0, 110],
+        plot_bgcolor="white",
+        paper_bgcolor="#F8F9FA",
+        font=dict(family="monospace", size=13),
+        title_font_size=16,
         margin=dict(t=60, b=40, l=40, r=20),
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor="#E0E0E0")
     console.print("  [magenta]Plotly bar chart built[/]")
 
-    emit(AgentMessage("Visualizer", "Manager",
-         "Chart ready — bar chart of subject averages generated.", "result"))
+    emit(
+        AgentMessage(
+            "Visualizer",
+            "Manager",
+            "Chart ready — bar chart of subject averages generated.",
+            "result",
+        )
+    )
     state_now("Visualizer", "done")
     emit(AgentMessage("Visualizer", "ALL", "Visualization complete!", "complete"))
 
     # ── Reporter ────────────────────────────────────────────────────────────
     console.print("\n[bold red]── Reporter Phase ──[/]")
-    emit(AgentMessage("Manager", "ALL", "All data ready. Dispatching Reporter...", "update"))
+    emit(
+        AgentMessage(
+            "Manager", "ALL", "All data ready. Dispatching Reporter...", "update"
+        )
+    )
     state_now("Reporter", "working")
-    emit(AgentMessage("Manager",  "Reporter",
-         "Assemble the final investigation report from all findings.", "task"))
-    emit(AgentMessage("Reporter", "ALL",
-         "Reviewing findings from DataCleaner, Statistician, and Visualizer...", "update"))
+    emit(
+        AgentMessage(
+            "Manager",
+            "Reporter",
+            "Assemble the final investigation report from all findings.",
+            "task",
+        )
+    )
+    emit(
+        AgentMessage(
+            "Reporter",
+            "ALL",
+            "Reviewing findings from DataCleaner, Statistician, and Visualizer...",
+            "update",
+        )
+    )
 
     report_lines = [
         "# Case Report: Student Grades Investigation",
@@ -299,32 +428,50 @@ def _run_investigation(interval: float = 1.0) -> None:
     ]
     report_text = "\n".join(report_lines)
 
-    emit(AgentMessage("Reporter", "Manager", "Final report assembled and ready.", "result"))
+    emit(
+        AgentMessage(
+            "Reporter", "Manager", "Final report assembled and ready.", "result"
+        )
+    )
     state_now("Reporter", "done")
-    emit(AgentMessage("Reporter", "ALL", "Investigation complete! Case closed. 🎉", "complete"))
-    emit(AgentMessage("Manager",  "ALL",
-         "All agents have completed their tasks. Investigation closed! 🎉", "complete"))
+    emit(
+        AgentMessage(
+            "Reporter", "ALL", "Investigation complete! Case closed. 🎉", "complete"
+        )
+    )
+    emit(
+        AgentMessage(
+            "Manager",
+            "ALL",
+            "All agents have completed their tasks. Investigation closed! 🎉",
+            "complete",
+        )
+    )
 
     # Report appears as soon as the last message does (no extra interval gap)
     last_display = msgs[-1].display_after
 
     # Commit to shared state
-    _message_log    = msgs
+    _message_log = msgs
     _state_schedule = sched
-    _results["fig"]    = fig
+    _results["fig"] = fig
     _results["report"] = report_text
     _done_after = last_display
 
-    console.print(Panel(
-        f"[bold green]✅ Plan complete![/]  {len(msgs)} messages scheduled over {delay:.0f} s\n"
-        f"[dim]Report appears alongside final message at +{delay:.0f}s[/]",
-        style="on dark_green", border_style="green"
-    ))
+    console.print(
+        Panel(
+            f"[bold green]✅ Plan complete![/]  {len(msgs)} messages scheduled over {delay:.0f} s\n"
+            f"[dim]Report appears alongside final message at +{delay:.0f}s[/]",
+            style="on dark_green",
+            border_style="green",
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
 # 5. UI helpers
 # ---------------------------------------------------------------------------
+
 
 def _badge(status: str) -> ui.Tag:
     colors = {"waiting": "#95A5A6", "working": "#F39C12", "done": "#27AE60"}
@@ -334,79 +481,94 @@ def _badge(status: str) -> ui.Tag:
         style=(
             f"background:{colors.get(status, '#95A5A6')};color:white;"
             "padding:3px 10px;border-radius:12px;font-size:0.8em;font-weight:bold;"
-        )
+        ),
     )
 
 
 TASK_DESCRIPTIONS = {
-    "DataCleaner":  "Find dirty/missing rows",
+    "DataCleaner": "Find dirty/missing rows",
     "Statistician": "Compute summary statistics",
-    "Visualizer":   "Produce bar chart",
-    "Reporter":     "Assemble final report",
+    "Visualizer": "Produce bar chart",
+    "Reporter": "Assemble final report",
 }
 
 
 def _task_card(agent: str, status: str) -> ui.Tag:
-    icon  = AGENT_ICONS.get(agent, "🤖")
+    icon = AGENT_ICONS.get(agent, "🤖")
     color = AGENT_COLORS.get(agent, "#555")
     return ui.div(
         ui.div(
             ui.tags.span(f"{icon} {agent}", style=f"font-weight:bold;color:{color};"),
-            ui.tags.span(f" — {TASK_DESCRIPTIONS[agent]}", style="color:#555;font-size:0.85em;"),
-            style="margin-bottom:6px;"
+            ui.tags.span(
+                f" — {TASK_DESCRIPTIONS[agent]}", style="color:#555;font-size:0.85em;"
+            ),
+            style="margin-bottom:6px;",
         ),
         _badge(status),
         style=(
             "background:white;border:1px solid #E0E0E0;border-radius:10px;"
             f"padding:10px 14px;margin-bottom:8px;border-left:4px solid {color};"
-        )
+        ),
     )
 
 
 def _message_bubble(msg: AgentMessage) -> ui.Tag:
     color = AGENT_COLORS.get(msg.sender, "#555")
-    icon  = AGENT_ICONS.get(msg.sender, "🤖")
-    type_labels = {"task": "📋 TASK", "update": "💬 UPDATE", "result": "📤 RESULT", "complete": "🏁 DONE"}
+    icon = AGENT_ICONS.get(msg.sender, "🤖")
+    type_labels = {
+        "task": "📋 TASK",
+        "update": "💬 UPDATE",
+        "result": "📤 RESULT",
+        "complete": "🏁 DONE",
+    }
     ts = time.strftime("%H:%M:%S", time.localtime(msg.timestamp))
     return ui.div(
         ui.div(
-            ui.tags.span(f"{icon} {msg.sender}", style=f"font-weight:bold;color:{color};"),
+            ui.tags.span(
+                f"{icon} {msg.sender}", style=f"font-weight:bold;color:{color};"
+            ),
             ui.tags.span(f" → {msg.recipient}", style="color:#888;font-size:0.85em;"),
-            ui.tags.span(f"  [{type_labels.get(msg.msg_type, msg.msg_type)}]",
-                         style=f"color:{color};font-size:0.75em;margin-left:6px;"),
+            ui.tags.span(
+                f"  [{type_labels.get(msg.msg_type, msg.msg_type)}]",
+                style=f"color:{color};font-size:0.75em;margin-left:6px;",
+            ),
             ui.tags.span(f"  {ts}", style="color:#aaa;font-size:0.75em;float:right;"),
-            style="margin-bottom:4px;"
+            style="margin-bottom:4px;",
         ),
         ui.div(msg.content, style="color:#333;font-size:0.9em;line-height:1.4;"),
         style=(
             f"background:white;border-left:4px solid {color};"
             "border-radius:8px;padding:10px 14px;margin-bottom:8px;"
             "box-shadow:0 1px 3px rgba(0,0,0,0.07);"
-        )
+        ),
     )
 
 
 def _agent_status_card(agent: str, status: str) -> ui.Tag:
-    icon  = AGENT_ICONS.get(agent, "🤖")
+    icon = AGENT_ICONS.get(agent, "🤖")
     color = AGENT_COLORS.get(agent, "#555")
     roles = {
-        "DataCleaner":  "Finds dirty rows & anomalies",
+        "DataCleaner": "Finds dirty rows & anomalies",
         "Statistician": "Computes summary statistics",
-        "Visualizer":   "Produces charts & figures",
-        "Reporter":     "Assembles the final report",
+        "Visualizer": "Produces charts & figures",
+        "Reporter": "Assembles the final report",
     }
     return ui.div(
         ui.div(
             ui.tags.span(icon, style="font-size:1.3em;margin-right:6px;"),
-            ui.tags.span(agent, style=f"font-weight:bold;color:{color};font-size:0.95em;"),
-            style="margin-bottom:3px;"
+            ui.tags.span(
+                agent, style=f"font-weight:bold;color:{color};font-size:0.95em;"
+            ),
+            style="margin-bottom:3px;",
         ),
-        ui.div(roles.get(agent, ""), style="color:#777;font-size:0.75em;margin-bottom:6px;"),
+        ui.div(
+            roles.get(agent, ""), style="color:#777;font-size:0.75em;margin-bottom:6px;"
+        ),
         _badge(status),
         style=(
             "background:white;border:1px solid #E0E0E0;border-radius:10px;"
             f"padding:8px 12px;margin-bottom:8px;border-left:4px solid {color};"
-        )
+        ),
     )
 
 
@@ -416,26 +578,46 @@ def _agent_status_card(agent: str, status: str) -> ui.Tag:
 
 app_ui = ui.page_fluid(
     ui.busy_indicators.use(spinners=False, pulse=False, fade=False),
-    ui.tags.script("""
+    ui.tags.script(
+        """
         (function() {
-            // Watch for the results panel to appear, scroll to it, then roll credits
+            // Autostart when arriving from Scene 1
+            var p = new URLSearchParams(window.location.search);
+            if (p.get('autostart') === '1') {
+                var started = false;
+                var iv = setInterval(function() {
+                    if (started) { clearInterval(iv); return; }
+                    var btn = document.getElementById('start_btn');
+                    if (btn && btn.classList.contains('shiny-bound-input')) {
+                        started = true;
+                        clearInterval(iv);
+                        var sel = document.getElementById('interval');
+                        if (sel) { sel.value = '2'; sel.dispatchEvent(new Event('change')); }
+                        btn.click();
+                    }
+                }, 200);
+            }
+
+            // Watch for the results panel, scroll to it, then go to credits
             var credited = false;
-            var resultsObserver = new MutationObserver(function() {
+            var observer = new MutationObserver(function() {
                 if (credited) return;
                 if (!document.querySelector('.results-panel')) return;
                 credited = true;
-                resultsObserver.disconnect();
+                observer.disconnect();
                 setTimeout(function() {
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 }, 200);
                 setTimeout(function() {
-                    window.location.href = 'http://127.0.0.1:8001/credits';
+                    window.location.href = 'http://127.0.0.1:8002/';
                 }, 3200);
             });
-            resultsObserver.observe(document.body, { childList: true, subtree: true });
+            observer.observe(document.body, { childList: true, subtree: true });
         })();
-    """),
-    ui.tags.style("""
+    """
+    ),
+    ui.tags.style(
+        """
         body { background: #F0F2F5; font-family: 'Segoe UI', sans-serif; }
         /* Suppress Shiny's recalculating fade */
         .recalculating { opacity: 1 !important; }
@@ -482,36 +664,45 @@ app_ui = ui.page_fluid(
             border: none !important; cursor: pointer !important;
             margin-left: 10px !important;
         }
-    """),
-
+    """
+    ),
     ui.div(
         ui.tags.h2("🕵️ Data Science Detective Agency"),
-        ui.tags.p("Lesson 01: Multi-Agent Collaboration — Watch sub-agents solve a mystery dataset together"),
-        class_="header-bar"
+        ui.tags.p(
+            "Lesson 01: Multi-Agent Collaboration — Watch sub-agents solve a mystery dataset together"
+        ),
+        class_="header-bar",
     ),
-
     ui.div(
-        ui.input_action_button("start_btn", "▶ Start Investigation", class_="start-btn"),
+        ui.input_action_button(
+            "start_btn", "▶ Start Investigation", class_="start-btn"
+        ),
         ui.input_action_button("clear_btn", "✕ Clear", class_="clear-btn"),
         ui.tags.span(
             ui.input_select(
-                "interval", None,
-                choices={"1": "1 s / message", "2": "2 s / message",
-                         "3": "3 s / message", "4": "4 s / message", "5": "5 s / message"},
+                "interval",
+                None,
+                choices={
+                    "1": "1 s / message",
+                    "2": "2 s / message",
+                    "3": "3 s / message",
+                    "4": "4 s / message",
+                    "5": "5 s / message",
+                },
                 selected="1",
                 width="140px",
             ),
-            style="display:inline-block;vertical-align:middle;margin-left:14px;"
+            style="display:inline-block;vertical-align:middle;margin-left:14px;",
         ),
         ui.output_text("status_text"),
-        style="padding: 0 16px 16px; display:flex; align-items:center; gap:0;"
+        style="padding: 0 16px 16px; display:flex; align-items:center; gap:0;",
     ),
-
     ui.layout_columns(
         ui.div(
             ui.div("💬 Live Message Log", class_="panel-title"),
             ui.div(ui.output_ui("message_log"), class_="msg-log", id="msg-log-div"),
-            ui.tags.script("""
+            ui.tags.script(
+                """
                 (function() {
                     var d = document.getElementById('msg-log-div');
                     if (!d) return;
@@ -527,20 +718,19 @@ app_ui = ui.page_fluid(
                     });
                     observer.observe(d, { childList: true, subtree: true });
                 })();
-            """),
-            style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;"
+            """
+            ),
+            style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;",
         ),
         ui.div(
             ui.div("🤖 Agent Status", class_="panel-title"),
             ui.output_ui("agent_cards"),
-            style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;"
+            style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;",
         ),
         col_widths=[9, 3],
     ),
-
     ui.output_ui("results_panel"),
-
-    style="max-width:1400px;margin:0 auto;padding:0 16px 40px;"
+    style="max-width:1400px;margin:0 auto;padding:0 16px 40px;",
 )
 
 
@@ -565,7 +755,10 @@ def app_server(input, output, session):
 
     def _current_states() -> dict[str, str]:
         now = time.time()
-        states = {a: "waiting" for a in ["DataCleaner", "Statistician", "Visualizer", "Reporter"]}
+        states = {
+            a: "waiting"
+            for a in ["DataCleaner", "Statistician", "Visualizer", "Reporter"]
+        }
         for ts, agent, state in _state_schedule:
             if ts <= now:
                 states[agent] = state
@@ -582,9 +775,13 @@ def app_server(input, output, session):
     @output
     @render.ui
     def task_queue():
-        clock()   # subscribe to shared clock
-        return ui.div(*[_task_card(a, _current_states()[a])
-                        for a in ["DataCleaner", "Statistician", "Visualizer", "Reporter"]])
+        clock()  # subscribe to shared clock
+        return ui.div(
+            *[
+                _task_card(a, _current_states()[a])
+                for a in ["DataCleaner", "Statistician", "Visualizer", "Reporter"]
+            ]
+        )
 
     @output
     @render.ui
@@ -594,7 +791,7 @@ def app_server(input, output, session):
         if not visible:
             return ui.div(
                 "Waiting for investigation to start...",
-                style="color:#aaa;font-style:italic;padding:20px;text-align:center;"
+                style="color:#aaa;font-style:italic;padding:20px;text-align:center;",
             )
         return ui.div(*[_message_bubble(m) for m in visible])
 
@@ -602,8 +799,12 @@ def app_server(input, output, session):
     @render.ui
     def agent_cards():
         clock()
-        return ui.div(*[_agent_status_card(a, _current_states()[a])
-                        for a in ["DataCleaner", "Statistician", "Visualizer", "Reporter"]])
+        return ui.div(
+            *[
+                _agent_status_card(a, _current_states()[a])
+                for a in ["DataCleaner", "Statistician", "Visualizer", "Reporter"]
+            ]
+        )
 
     @output
     @render.text
@@ -624,17 +825,23 @@ def app_server(input, output, session):
         report_html = markdown2.markdown(_results.get("report", ""))
         fig_html = _results["fig"].to_html(full_html=False, include_plotlyjs="cdn")
         return ui.div(
-            ui.div("📊 Investigation Results", class_="panel-title", style="font-size:1.1em;"),
+            ui.div(
+                "📊 Investigation Results",
+                class_="panel-title",
+                style="font-size:1.1em;",
+            ),
             ui.layout_columns(
                 ui.div(ui.HTML(fig_html)),
                 ui.div(
-                    ui.div("📝 Final Report",
-                           style="font-weight:bold;margin-bottom:10px;color:#333;"),
+                    ui.div(
+                        "📝 Final Report",
+                        style="font-weight:bold;margin-bottom:10px;color:#333;",
+                    ),
                     ui.div(ui.HTML(report_html), class_="report-text"),
                 ),
                 col_widths=[6, 6],
             ),
-            class_="results-panel"
+            class_="results-panel",
         )
 
     # ── actions ──────────────────────────────────────────────────────────────
@@ -663,12 +870,15 @@ app = App(app_ui, app_server)
 
 if __name__ == "__main__":
     import uvicorn
-    console.print(Panel(
-        "[bold white]🕵️  Data Science Detective Agency[/]\n"
-        "[dim]Lesson 01: Multi-Agent Collaboration[/]\n\n"
-        "[bright_blue]http://127.0.0.1:8000[/]  ← open in browser\n"
-        "[dim]Click [bold]▶ Start Investigation[/dim] to begin",
-        title="[bold]Starting server[/]",
-        border_style="bright_blue",
-    ))
+
+    console.print(
+        Panel(
+            "[bold white]🕵️  Data Science Detective Agency[/]\n"
+            "[dim]Lesson 01: Multi-Agent Collaboration[/]\n\n"
+            "[bright_blue]http://127.0.0.1:8000[/]  ← open in browser\n"
+            "[dim]Click [bold]▶ Start Investigation[/dim] to begin",
+            title="[bold]Starting server[/]",
+            border_style="bright_blue",
+        )
+    )
     uvicorn.run(app, host="127.0.0.1", port=8000)

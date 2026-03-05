@@ -1,259 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Credits — The Data Science Detective Agency</title>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Credits — The Data Science Detective Agency</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  html, body {
-    width: 100%; height: 100%;
-    background: #000;
-    overflow: hidden;
-    font-family: 'Georgia', serif;
-    color: #ddd;
-  }
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+      font-family: 'Georgia', serif;
+      color: #ddd;
+    }
 
-  /* ── Fade in from black ── */
-  .fade-in {
-    animation: fadein 1.2s ease-out forwards;
-  }
-  @keyframes fadein {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
+    /* ── Fade in from black ── */
+    .fade-in {
+      animation: fadein 1.2s ease-out forwards;
+    }
 
-  /* ── Scrolling credits container ── */
-  .credits-scroll {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(640px, 90vw);
-    /* start below the screen, scroll to well above it */
-    animation: scroll-up 28s linear 1.0s forwards;
-    opacity: 0;
-  }
-  @keyframes scroll-up {
-    0%   { top: 110vh; opacity: 1; }
-    5%   { opacity: 1; }
-    92%  { opacity: 1; }
-    100% { top: -260vh; opacity: 0; }
-  }
+    @keyframes fadein {
+      from {
+        opacity: 0;
+      }
 
-  /* ── Top colour bar ── */
-  .colour-bar {
-    height: 3px;
-    background: linear-gradient(90deg, #F0C040, #E67E22, #C0392B, #8E44AD, #4A90D9);
-    border-radius: 2px;
-    margin-bottom: 48px;
-  }
+      to {
+        opacity: 1;
+      }
+    }
 
-  /* ── Section headings ── */
-  .section-label {
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    letter-spacing: 0.45em;
-    color: #F0C040;
-    text-transform: uppercase;
-    text-align: center;
-    margin-bottom: 20px;
-    opacity: 0.85;
-  }
+    /* ── Scrolling credits container ── */
+    .credits-scroll {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(640px, 90vw);
+      /* start below the screen, scroll to well above it */
+      animation: scroll-up 28s linear 1.0s forwards;
+      opacity: 0;
+    }
 
-  /* ── Title card ── */
-  .title-card {
-    text-align: center;
-    margin-bottom: 60px;
-  }
-  .title-card .main-title {
-    font-size: 28px;
-    font-weight: bold;
-    color: #F0C040;
-    text-shadow: 0 0 18px rgba(240,192,64,0.35);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    line-height: 1.2;
-    margin-bottom: 10px;
-  }
-  .title-card .subtitle {
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    color: #888;
-    letter-spacing: 0.18em;
-  }
+    @keyframes scroll-up {
+      0% {
+        top: 110vh;
+        opacity: 1;
+      }
 
-  /* ── Credit rows ── */
-  .credit-block {
-    margin-bottom: 44px;
-    text-align: center;
-  }
-  .credit-role {
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    letter-spacing: 0.3em;
-    color: #888;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .credit-name {
-    font-size: 19px;
-    color: #eee;
-    letter-spacing: 0.04em;
-  }
-  .credit-name-gold {
-    font-size: 19px;
-    color: #F0C040;
-    letter-spacing: 0.04em;
-  }
+      5% {
+        opacity: 1;
+      }
 
-  /* ── Divider ── */
-  .divider {
-    width: 60%;
-    margin: 0 auto 48px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #ffffff22, transparent);
-  }
+      92% {
+        opacity: 1;
+      }
 
-  /* ── Agents cast table ── */
-  .cast-table {
-    width: 100%;
-    margin-bottom: 44px;
-    border-collapse: collapse;
-  }
-  .cast-table td {
-    padding: 7px 0;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  .cast-table .char { color: #eee; text-align: left; padding-left: 10%; width: 50%; }
-  .cast-table .dots { color: #444; text-align: center; letter-spacing: 0.15em; }
-  .cast-table .role { color: #aaa; font-family: 'Courier New', monospace;
-                      font-size: 12px; text-align: right; padding-right: 10%; }
+      100% {
+        top: -260vh;
+        opacity: 0;
+      }
+    }
 
-  /* ── End card ── */
-  .end-card {
-    text-align: center;
-    margin-top: 20px;
-    margin-bottom: 80px;
-  }
-  .end-card .the-end {
-    font-size: 36px;
-    font-weight: bold;
-    color: #F0C040;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    text-shadow: 0 0 30px rgba(240,192,64,0.4);
-    margin-bottom: 20px;
-  }
-  .end-card .tagline {
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    color: #555;
-    letter-spacing: 0.12em;
-    font-style: italic;
-  }
+    /* ── Top colour bar ── */
+    .colour-bar {
+      height: 3px;
+      background: linear-gradient(90deg, #F0C040, #E67E22, #C0392B, #8E44AD, #4A90D9);
+      border-radius: 2px;
+      margin-bottom: 48px;
+    }
 
-  /* ── Bottom colour bar ── */
-  .colour-bar-bottom {
-    height: 3px;
-    background: linear-gradient(90deg, #4A90D9, #8E44AD, #C0392B, #E67E22, #F0C040);
-    border-radius: 2px;
-    margin-top: 48px;
-  }
-</style>
+    /* ── Section headings ── */
+    .section-label {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      letter-spacing: 0.45em;
+      color: #F0C040;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 20px;
+      opacity: 0.85;
+    }
+
+    /* ── Title card ── */
+    .title-card {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .title-card .main-title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #F0C040;
+      text-shadow: 0 0 18px rgba(240, 192, 64, 0.35);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+
+    .title-card .subtitle {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #888;
+      letter-spacing: 0.18em;
+    }
+
+    /* ── Credit rows ── */
+    .credit-block {
+      margin-bottom: 44px;
+      text-align: center;
+    }
+
+    .credit-role {
+      font-family: 'Courier New', monospace;
+      font-size: 18px;
+      letter-spacing: 0.3em;
+      color: #e7dfdf;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .credit-name {
+      font-size: 19px;
+      color: #eee;
+      letter-spacing: 0.04em;
+    }
+
+    .credit-name-gold {
+      font-size: 19px;
+      color: #F0C040;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      width: 60%;
+      margin: 0 auto 48px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #ffffff22, transparent);
+    }
+
+    /* ── Agents cast table ── */
+    .cast-table {
+      width: 100%;
+      margin-bottom: 44px;
+      border-collapse: collapse;
+    }
+
+    .cast-table td {
+      padding: 7px 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .cast-table .char {
+      color: #eee;
+      text-align: left;
+      padding-left: 10%;
+      width: 50%;
+    }
+
+    .cast-table .dots {
+      color: #444;
+      text-align: center;
+      letter-spacing: 0.15em;
+    }
+
+    .cast-table .role {
+      color: #aaa;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      text-align: right;
+      padding-right: 10%;
+    }
+
+    /* ── End card ── */
+    .end-card {
+      text-align: center;
+      margin-top: 20px;
+      margin-bottom: 80px;
+    }
+
+    .end-card .the-end {
+      font-size: 36px;
+      font-weight: bold;
+      color: #F0C040;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      text-shadow: 0 0 30px rgba(240, 192, 64, 0.4);
+      margin-bottom: 20px;
+    }
+
+    .end-card .tagline {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #555;
+      letter-spacing: 0.12em;
+      font-style: italic;
+    }
+
+    /* ── Bottom colour bar ── */
+    .colour-bar-bottom {
+      height: 3px;
+      background: linear-gradient(90deg, #4A90D9, #8E44AD, #C0392B, #E67E22, #F0C040);
+      border-radius: 2px;
+      margin-top: 48px;
+    }
+  </style>
 </head>
+
 <body class="fade-in">
 
-<div class="credits-scroll">
+  <div class="credits-scroll">
 
-  <div class="colour-bar"></div>
+    <div class="colour-bar"></div>
 
-  <!-- Title -->
-  <div class="title-card">
-    <div class="main-title">The Data Science<br>Detective Agency</div>
-    <div class="subtitle">Lesson 01 &mdash; Multi-Agent Collaboration</div>
-  </div>
-
-  <!-- Cast -->
-  <div class="section-label">Cast of Agents</div>
-  <table class="cast-table">
-    <tr>
-      <td class="char">🕵️ Manager Agent</td>
-      <td class="dots">· · · · · · ·</td>
-      <td class="role">Orchestrator</td>
-    </tr>
-    <tr>
-      <td class="char">🧹 DataCleaner</td>
-      <td class="dots">· · · · · · ·</td>
-      <td class="role">Quality Control</td>
-    </tr>
-    <tr>
-      <td class="char">📊 Statistician</td>
-      <td class="dots">· · · · · · ·</td>
-      <td class="role">Analyst</td>
-    </tr>
-    <tr>
-      <td class="char">🎨 Visualizer</td>
-      <td class="dots">· · · · · · ·</td>
-      <td class="role">Chart Artist</td>
-    </tr>
-    <tr>
-      <td class="char">📝 Reporter</td>
-      <td class="dots">· · · · · · ·</td>
-      <td class="role">Lead Writer</td>
-    </tr>
-  </table>
-
-  <div class="divider"></div>
-
-  <!-- Crew -->
-  <div class="section-label">Production</div>
-
-  <div class="credit-block">
-    <div class="credit-role">Written &amp; Directed by</div>
-    <div class="credit-name-gold">Data Intelligence Researcher</div>
-  </div>
-
-  <div class="credit-block">
-    <div class="credit-role">Dashboard Framework</div>
-    <div class="credit-name">Shiny for Python</div>
-  </div>
-
-  <div class="credit-block">
-    <div class="credit-role">Charts</div>
-    <div class="credit-name">Plotly</div>
-  </div>
-
-  <div class="credit-block">
-    <div class="credit-role">Powered by</div>
-    <div class="credit-name">Python 3.12 &amp; uv</div>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="section-label">Dataset</div>
-  <div class="credit-block">
-    <div class="credit-role">30 Student Grade Records</div>
-    <div class="credit-name" style="font-size:13px;color:#777;">
-      Alice · Bob · Carol · David · Eva · Frank · Grace · Hiro<br>
-      Iris · Jake · Kira · Leo · Mia · Noah · Olivia · Pete<br>
-      Quinn · Rosa · Sam · Tina · Uma · Vince · Wendy · Xander<br>
-      Yara · Zoe · Amir · Bella · Caden · Dana
+    <!-- Title -->
+    <div class="title-card">
+      <div class="main-title">The Data Science<br>Detective Agency</div>
+      <div class="subtitle">Lesson 01 &mdash; Multi-Agent Collaboration</div>
     </div>
-  </div>
 
-  <div class="divider"></div>
+    <!-- Cast -->
+    <div class="section-label">Cast of Agents</div>
+    <table class="cast-table">
+      <tr>
+        <td class="char">🕵️ Manager Agent</td>
+        <td class="dots">· · · · · · ·</td>
+        <td class="role">Orchestrator</td>
+      </tr>
+      <tr>
+        <td class="char">🧹 DataCleaner</td>
+        <td class="dots">· · · · · · ·</td>
+        <td class="role">Quality Control</td>
+      </tr>
+      <tr>
+        <td class="char">📊 Statistician</td>
+        <td class="dots">· · · · · · ·</td>
+        <td class="role">Analyst</td>
+      </tr>
+      <tr>
+        <td class="char">🎨 Visualizer</td>
+        <td class="dots">· · · · · · ·</td>
+        <td class="role">Chart Artist</td>
+      </tr>
+      <tr>
+        <td class="char">📝 Reporter</td>
+        <td class="dots">· · · · · · ·</td>
+        <td class="role">Lead Writer</td>
+      </tr>
+    </table>
 
-  <!-- The End -->
-  <div class="end-card">
-    <div class="the-end">The End</div>
-    <div class="tagline">"Every dataset hides a secret — case closed."</div>
-  </div>
+    <div class="divider"></div>
 
-  <div class="colour-bar-bottom"></div>
+    <!-- Crew -->
+    <div class="section-label">Production</div>
 
-</div>
+    <div class="credit-block">
+      <div class="credit-role">Written &amp; Directed by</div>
+      <div class="credit-name-gold">Data Intelligence Researcher</div>
+    </div>
+
+    <div class="credit-block">
+      <div class="credit-role">Dashboard Framework</div>
+      <div class="credit-name">Shiny for Python</div>
+    </div>
+
+    <div class="credit-block">
+      <div class="credit-role">Charts</div>
+      <div class="credit-name">Plotly</div>
+    </div>
+
+    <div class="credit-block">
+      <div class="credit-role">Powered by</div>
+      <div class="credit-name">Python 3.12 &amp; uv</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-label">Dataset</div>
+    <div class="credit-block">
+      <div class="credit-role">30 Student Grade Records</div>
+      <div class="credit-name" style="font-size:15px;color:#777;">
+        Alice · Bob · Carol · David · Eva · Frank · Grace · Hiro<br>
+        Iris · Jake · Kira · Leo · Mia · Noah · Olivia · Pete<br>
+        Quinn · Rosa · Sam · Tina · Uma · Vince · Wendy · Xander<br>
+        Yara · Zoe · Amir · Bella · Caden · Dana
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- The End -->
+    <div class="end-card">
+      <div class="the-end">The End</div>
+      <div style="font-size:20px;color:#f7eeee;"">" Every dataset hides a secret — case closed."</div>
+      </div>
+
+      <div class="colour-bar-bottom"></div>
+
+    </div>
 
 </body>
+
 </html>
