@@ -420,12 +420,13 @@ app_ui = ui.page_fluid(
         (function() {
             var p = new URLSearchParams(window.location.search);
             if (p.get('autostart') === '1') {
-                var iv = setInterval(function() {
-                    var sel = document.getElementById('interval');
-                    if (sel) { sel.value = '2'; sel.dispatchEvent(new Event('change')); }
-                    var btn = document.getElementById('start_btn');
-                    if (btn) { btn.click(); clearInterval(iv); }
-                }, 300);
+                $(document).on('shiny:connected', function() {
+                    setTimeout(function() {
+                        var sel = document.getElementById('interval');
+                        if (sel) { sel.value = '2'; sel.dispatchEvent(new Event('change')); }
+                        document.getElementById('start_btn').click();
+                    }, 500);
+                });
             }
         })();
     """),
