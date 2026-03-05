@@ -479,12 +479,24 @@ app_ui = ui.page_fluid(
             ui.div("💬 Live Message Log", class_="panel-title"),
             ui.div(ui.output_ui("message_log"), class_="msg-log", id="msg-log-div"),
             ui.tags.script("""
-                // Auto-scroll only when already near the bottom
-                setInterval(function() {
+                (function() {
                     var d = document.getElementById('msg-log-div');
-                    if (d && (d.scrollHeight - d.scrollTop - d.clientHeight < 80))
-                        d.scrollTop = d.scrollHeight;
-                }, 1000);
+                    if (!d) return;
+
+                    // True when user is near the bottom (or hasn't scrolled at all)
+                    var pinned = true;
+
+                    // Update pinned state when user scrolls manually
+                    d.addEventListener('scroll', function() {
+                        pinned = (d.scrollHeight - d.scrollTop - d.clientHeight) < 80;
+                    });
+
+                    // Scroll immediately after Shiny injects new content
+                    var observer = new MutationObserver(function() {
+                        if (pinned) d.scrollTop = d.scrollHeight;
+                    });
+                    observer.observe(d, { childList: true, subtree: true });
+                })();
             """),
             style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;"
         ),
