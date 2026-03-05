@@ -813,10 +813,13 @@ def app_server(input, output, session):
             ),
             ui.div("📊 Investigation Results", class_="panel-title", style="font-size:1.1em;"),
             ui.layout_columns(
-                ui.div(ui.HTML(fig_html)),
                 ui.div(
                     ui.div("📝 Final Report", style="font-weight:bold;margin-bottom:10px;color:#333;"),
                     ui.div(ui.HTML(report_html), class_="report-text"),
+                ),
+                ui.div(
+                    ui.div("📊 Chart", style="font-weight:bold;margin-bottom:10px;color:#333;"),
+                    ui.div(ui.HTML(fig_html), style="min-height:420px;"),
                 ),
                 col_widths=[6, 6],
             ),
