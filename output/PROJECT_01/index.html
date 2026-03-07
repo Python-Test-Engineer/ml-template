@@ -698,7 +698,7 @@
       <a href="#home" class="nav-logo">LOGO</a>
       <nav aria-label="Primary navigation">
         <ul class="nav-links">
-          <li><a href="#home" class="active">Home</a></li>
+          <li><a href="#home">Home</a></li>
           <li><a href="#about">About</a></li>
           <li><a href="#services">Services</a></li>
           <li><a href="#portfolio">Portfolio</a></li>
@@ -865,6 +865,21 @@
           hamburger.setAttribute('aria-expanded', 'false');
         });
       });
-    </script>
+
+      // Scroll spy
+      const sections = document.querySelectorAll('main section[id]');
+
+      const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            navLinks.forEach(function (link) {
+              link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+            });
+          }
+        });
+      }, { rootMargin: '-50% 0px -50% 0px' });
+
+      sections.forEach(function (section) { observer.observe(section); });
+</script>
   </body>
 </html>
