@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Site</title>
+    <style>
+      /* ── Reset ──────────────────────────────────────────────── */
+      html,
+      body,
+      div,
+      span,
+      applet,
+      object,
+      iframe,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p,
+      blockquote,
+      pre,
+      a,
+      abbr,
+      acronym,
+      address,
+      big,
+      cite,
+      code,
+      del,
+      dfn,
+      em,
+      img,
+      ins,
+      kbd,
+      q,
+      s,
+      samp,
+      small,
+      strike,
+      strong,
+      sub,
+      sup,
+      tt,
+      var,
+      b,
+      u,
+      i,
+      center,
+      dl,
+      dt,
+      dd,
+      ol,
+      ul,
+      li,
+      fieldset,
+      form,
+      label,
+      legend,
+      table,
+      caption,
+      tbody,
+      tfoot,
+      thead,
+      tr,
+      th,
+      td,
+      article,
+      aside,
+      canvas,
+      details,
+      embed,
+      figure,
+      figcaption,
+      footer,
+      header,
+      hgroup,
+      menu,
+      nav,
+      output,
+      ruby,
+      section,
+      summary,
+      time,
+      mark,
+      audio,
+      textarea,
+      video,
+      button,
+      input {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-size: 100%;
+        font-family: "Aeonik Mono", ui-monospace, "Courier New", monospace;
+        vertical-align: baseline;
+        text-decoration: none;
+      }
+
+      /* ── Custom Properties ──────────────────────────────────── */
+      :root {
+        --bg:           #F4EFEA;
+        --text:         #1A1A1A;
+        --text-muted:   rgba(26,26,26,0.50);
+        --card-bg:      #EDE8E2;
+        --border:       rgba(26,26,26,0.18);
+        --border-bold:  rgba(26,26,26,0.85);
+        --accent:       #1A1A1A;
+        --yellow:       #F5C800;
+        --yellow-dark:  #C49E00;
+
+        --font:         "Aeonik Mono", ui-monospace, "Courier New", monospace;
+
+        --header-h-desktop: 90px;
+        --header-h-mobile:  70px;
+
+        --section-pad-v:  120px;
+        --section-pad-h:  48px;
+        --max-width:      1200px;
+
+        scroll-behavior: auto;
+        scroll-padding-top: var(--header-h-desktop);
+      }
+
+      /* ── Base ───────────────────────────────────────────────── */
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 1.125rem;
+        line-height: 1.6;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 0 var(--section-pad-h);
+      }
+
+      /* ── Skip Link ──────────────────────────────────────────── */
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: auto;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        color: var(--text);
+        background: var(--bg);
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        z-index: 9999;
+      }
+      .skip-link:focus {
+        left: var(--section-pad-h);
+        top: 1rem;
+        width: auto;
+        height: auto;
+        overflow: visible;
+      }
+
+      /* ── Header / Navbar ────────────────────────────────────── */
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: var(--header-h-desktop);
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 var(--section-pad-h);
+      }
+
+      .nav-logo {
+        font-size: 0.875rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--text);
+        padding-bottom: 2px;
+        border-bottom: 2px solid var(--text);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 2.5rem;
+        list-style: none;
+      }
+
+      .nav-links a {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .nav-links a.active {
+        color: var(--text);
+        border-bottom: 2px solid var(--text);
+        padding-bottom: 2px;
+      }
+
+      .hamburger {
+        display: none;
+        cursor: pointer;
+        flex-direction: column;
+        gap: 5px;
+        background: transparent;
+        border: none;
+        padding: 0;
+      }
+
+      .hamburger span {
+        display: block;
+        width: 24px;
+        height: 2px;
+        background: var(--text);
+      }
+
+      /* Mobile nav open state */
+      header.nav-open .nav-links {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: var(--header-h-mobile);
+        left: 0;
+        width: 100%;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem var(--section-pad-h);
+        gap: 1.5rem;
+      }
+
+      /* ── Main offset ────────────────────────────────────────── */
+      main {
+        padding-top: var(--header-h-desktop);
+      }
+
+      /* ── Editorial labels ───────────────────────────────────── */
+      .section-eyebrow {
+        display: block;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--text-muted);
+        margin-bottom: 1.25rem;
+      }
+
+      /* ── Section: Home ──────────────────────────────────────── */
+      #home {
+        min-height: calc(100vh - var(--header-h-desktop));
+        display: flex;
+        align-items: flex-end;
+        padding: var(--section-pad-v) var(--section-pad-h) 80px;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+      }
+
+      .hero-inner {
+        width: 100%;
+      }
+
+      .hero-counter {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 3rem;
+        display: block;
+      }
+
+      .hero-headline {
+        font-size: clamp(3.5rem, 8vw, 7rem);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: -0.03em;
+        line-height: 0.95;
+        max-width: 900px;
+      }
+
+      .hero-divider {
+        width: 64px;
+        height: 4px;
+        background: var(--yellow);
+        margin: 2.5rem 0;
+        display: block;
+        border: none;
+      }
+
+      .hero-sub {
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        max-width: 480px;
+        line-height: 1.6;
+      }
+
+      .hero-actions {
+        margin-top: 3rem;
+        display: flex;
+        align-items: center;
+        gap: 3rem;
+      }
+
+      .btn-outline {
+        display: inline-block;
+        padding: 0.875rem 2.5rem;
+        border: 2px solid var(--text);
+        color: var(--text);
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        background: var(--yellow);
+        cursor: pointer;
+        box-shadow: 4px 4px 0 var(--text);
+      }
+
+      .hero-scroll-label {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--text-muted);
+      }
+
+      /* ── Section: About ─────────────────────────────────────── */
+      #about {
+        padding: var(--section-pad-v) var(--section-pad-h);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .about-grid {
+        display: grid;
+        grid-template-columns: 5fr 4fr;
+        gap: 6rem;
+        align-items: start;
+        margin-top: 4rem;
+      }
+
+      .about-text {
+        border-left: 4px solid var(--yellow);
+        padding-left: 2rem;
+      }
+
+      .about-image-placeholder {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: var(--card-bg) url('images/webpage.png') center / cover no-repeat;
+      }
+
+      .section-heading {
+        font-size: clamp(2.25rem, 4.5vw, 4rem);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: -0.02em;
+        line-height: 1.0;
+        margin-bottom: 0;
+      }
+
+      .body-copy {
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.8;
+        color: var(--text-muted);
+        margin-top: 1.5rem;
+      }
+
+      /* ── Section: Services ──────────────────────────────────── */
+      #services {
+        padding: var(--section-pad-v) var(--section-pad-h);
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .services-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-top: 4rem;
+      }
+
+      .service-card {
+        background: var(--bg);
+        padding: 2.5rem 2rem;
+        border: 2px solid var(--text);
+        box-shadow: 5px 5px 0 var(--text);
+      }
+
+      .service-card-num {
+        display: inline-block;
+        font-size: 0.6875rem;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        color: var(--text);
+        background: var(--yellow);
+        padding: 0.2rem 0.5rem;
+        margin-bottom: 1.75rem;
+        text-transform: uppercase;
+      }
+
+      .service-card h3 {
+        font-size: 1.125rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 1rem;
+        line-height: 1.2;
+      }
+
+      .service-card p {
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.7;
+        color: var(--text-muted);
+      }
+
+      /* ── Section: Portfolio ─────────────────────────────────── */
+      #portfolio {
+        padding: var(--section-pad-v) var(--section-pad-h);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .portfolio-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-top: 4rem;
+      }
+
+      .portfolio-tile {
+        border: 2px solid var(--text);
+        box-shadow: 5px 5px 0 var(--text);
+      }
+
+      .portfolio-tile-image {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: var(--card-bg) url('images/webpage.png') center / cover no-repeat;
+      }
+
+      .portfolio-tile-body {
+        padding: 1.75rem 1.5rem;
+      }
+
+      .portfolio-tile-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 0.75rem;
+      }
+
+      .portfolio-tile-body h3 {
+        font-size: 1rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .portfolio-tile-num {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: var(--text);
+        background: var(--yellow);
+        padding: 0.15rem 0.4rem;
+        text-transform: uppercase;
+      }
+
+      .portfolio-tile-body p {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        line-height: 1.7;
+        color: var(--text-muted);
+      }
+
+      /* ── Section: Contact ───────────────────────────────────── */
+      #contact {
+        padding: var(--section-pad-v) var(--section-pad-h);
+        background: var(--card-bg);
+      }
+
+      .contact-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8rem;
+        align-items: start;
+        margin-top: 4rem;
+      }
+
+      .contact-info {
+        padding-top: 0.5rem;
+      }
+
+      .contact-info-label {
+        display: block;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+      }
+
+      .contact-info-value {
+        font-size: 1.25rem;
+        font-weight: 900;
+        color: var(--text);
+        letter-spacing: -0.01em;
+        display: block;
+        margin-bottom: 2.5rem;
+      }
+
+      .contact-form {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .form-group label {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--text-muted);
+      }
+
+      .form-group input,
+      .form-group textarea {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid var(--border-bold);
+        padding: 0.625rem 0;
+        font-family: var(--font);
+        font-size: 1.0625rem;
+        font-weight: 600;
+        color: var(--text);
+        width: 100%;
+        outline: none;
+      }
+
+      .form-group input::placeholder,
+      .form-group textarea::placeholder {
+        color: var(--text-muted);
+        font-weight: 400;
+      }
+
+      .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      .btn-submit {
+        align-self: flex-start;
+        margin-top: 0.5rem;
+        padding: 0.875rem 2.5rem;
+        border: 2px solid var(--text);
+        background: var(--yellow);
+        color: var(--text);
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        cursor: pointer;
+        font-family: var(--font);
+        box-shadow: 4px 4px 0 var(--text);
+      }
+
+      /* ── Footer ─────────────────────────────────────────────── */
+      footer {
+        padding: 1.75rem var(--section-pad-h);
+        border-top: 4px solid var(--yellow);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      footer p {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+      }
+
+      .footer-links a {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      /* ── Responsive: 768px ──────────────────────────────────── */
+      @media (max-width: 768px) {
+        :root {
+          scroll-padding-top: var(--header-h-mobile);
+          --section-pad-h: 20px;
+          --section-pad-v: 72px;
+        }
+
+        header {
+          height: var(--header-h-mobile);
+        }
+
+        main {
+          padding-top: var(--header-h-mobile);
+        }
+
+        #home {
+          min-height: calc(100vh - var(--header-h-mobile));
+          align-items: flex-end;
+          padding-bottom: 48px;
+        }
+
+        .nav-links {
+          display: none;
+        }
+
+        .hamburger {
+          display: flex;
+        }
+
+        .about-grid {
+          grid-template-columns: 1fr;
+          gap: 3rem;
+        }
+
+        .about-text {
+          border-left: none;
+          border-top: 4px solid var(--yellow);
+          padding-left: 0;
+          padding-top: 1.5rem;
+        }
+
+        .services-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .portfolio-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .contact-layout {
+          grid-template-columns: 1fr;
+          gap: 3rem;
+        }
+
+        .hero-actions {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1.5rem;
+        }
+
+        footer {
+          flex-direction: column;
+          text-align: center;
+          border-top-width: 2px;
+        }
+
+        .footer-links {
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#home" class="skip-link">Skip to content</a>
+
+    <header>
+      <a href="#home" class="nav-logo">LOGO</a>
+      <nav aria-label="Primary navigation">
+        <ul class="nav-links">
+          <li><a href="#home" class="active">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#portfolio">Portfolio</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+      <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </header>
+
+    <main>
+      <section id="home" aria-labelledby="home-heading">
+        <div class="hero-inner">
+          <span class="hero-counter">Selected works — 2026</span>
+          <h1 id="home-heading" class="hero-headline">YOUR HEADLINE HERE</h1>
+          <hr class="hero-divider">
+          <p class="hero-sub">A short subheading that describes what you do in one or two lines.</p>
+          <div class="hero-actions">
+            <a href="#about" class="btn-outline">View Work</a>
+            <span class="hero-scroll-label">Scroll to explore</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" aria-labelledby="about-heading">
+        <span class="section-eyebrow">01 — About</span>
+        <h2 id="about-heading" class="section-heading">About Us</h2>
+        <div class="about-grid">
+          <div class="about-text">
+            <p class="body-copy">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+            <p class="body-copy">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+          </div>
+          <div class="about-image-placeholder" role="img" aria-label="About us image placeholder"></div>
+        </div>
+      </section>
+
+      <section id="services" aria-labelledby="services-heading">
+        <span class="section-eyebrow">02 — Services</span>
+        <h2 id="services-heading" class="section-heading">Services</h2>
+        <div class="services-grid">
+          <div class="service-card">
+            <span class="service-card-num">01</span>
+            <h3>Service One</h3>
+            <p>A brief description of this service and the value it provides to clients.</p>
+          </div>
+          <div class="service-card">
+            <span class="service-card-num">02</span>
+            <h3>Service Two</h3>
+            <p>A brief description of this service and the value it provides to clients.</p>
+          </div>
+          <div class="service-card">
+            <span class="service-card-num">03</span>
+            <h3>Service Three</h3>
+            <p>A brief description of this service and the value it provides to clients.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="portfolio" aria-labelledby="portfolio-heading">
+        <span class="section-eyebrow">03 — Portfolio</span>
+        <h2 id="portfolio-heading" class="section-heading">Portfolio</h2>
+        <div class="portfolio-grid">
+          <div class="portfolio-tile">
+            <div class="portfolio-tile-image" role="img" aria-label="Project One image placeholder"></div>
+            <div class="portfolio-tile-body">
+              <div class="portfolio-tile-meta">
+                <h3>Project One</h3>
+                <span class="portfolio-tile-num">01 / 04</span>
+              </div>
+              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.</p>
+            </div>
+          </div>
+          <div class="portfolio-tile">
+            <div class="portfolio-tile-image" role="img" aria-label="Project Two image placeholder"></div>
+            <div class="portfolio-tile-body">
+              <div class="portfolio-tile-meta">
+                <h3>Project Two</h3>
+                <span class="portfolio-tile-num">02 / 04</span>
+              </div>
+              <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.</p>
+            </div>
+          </div>
+          <div class="portfolio-tile">
+            <div class="portfolio-tile-image" role="img" aria-label="Project Three image placeholder"></div>
+            <div class="portfolio-tile-body">
+              <div class="portfolio-tile-meta">
+                <h3>Project Three</h3>
+                <span class="portfolio-tile-num">03 / 04</span>
+              </div>
+              <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore.</p>
+            </div>
+          </div>
+          <div class="portfolio-tile">
+            <div class="portfolio-tile-image" role="img" aria-label="Project Four image placeholder"></div>
+            <div class="portfolio-tile-body">
+              <div class="portfolio-tile-meta">
+                <h3>Project Four</h3>
+                <span class="portfolio-tile-num">04 / 04</span>
+              </div>
+              <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione sequi nesciunt.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" aria-labelledby="contact-heading">
+        <span class="section-eyebrow">04 — Contact</span>
+        <h2 id="contact-heading" class="section-heading">Get In Touch</h2>
+        <div class="contact-layout">
+          <div class="contact-info">
+            <span class="contact-info-label">Email</span>
+            <span class="contact-info-value">hello@yoursite.com</span>
+            <span class="contact-info-label">Location</span>
+            <span class="contact-info-value">Your City, Country</span>
+            <span class="contact-info-label">Availability</span>
+            <span class="contact-info-value">Open to projects</span>
+          </div>
+          <form class="contact-form" action="#" method="post" novalidate>
+            <div class="form-group">
+              <label for="contact-name">Name</label>
+              <input type="text" id="contact-name" name="name" autocomplete="name" placeholder="Your name">
+            </div>
+            <div class="form-group">
+              <label for="contact-email">Email</label>
+              <input type="email" id="contact-email" name="email" autocomplete="email" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+              <label for="contact-message">Message</label>
+              <textarea id="contact-message" name="message" placeholder="How can we help?"></textarea>
+            </div>
+            <button type="submit" class="btn-submit">Send Message</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2026 Your Name. All rights reserved.</p>
+      <ul class="footer-links">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#portfolio">Portfolio</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </footer>
+
+    <script>
+      const header = document.querySelector('header');
+      const hamburger = document.querySelector('.hamburger');
+      const navLinks = document.querySelectorAll('.nav-links a');
+
+      hamburger.addEventListener('click', function () {
+        const isOpen = header.classList.toggle('nav-open');
+        hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+
+      navLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+          header.classList.remove('nav-open');
+          hamburger.setAttribute('aria-expanded', 'false');
+        });
+      });
+    </script>
+  </body>
+</html>

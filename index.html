@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Site</title>
+    <style>
+      /* ── Reset ──────────────────────────────────────────────── */
+      html,
+      body,
+      div,
+      span,
+      applet,
+      object,
+      iframe,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p,
+      blockquote,
+      pre,
+      a,
+      abbr,
+      acronym,
+      address,
+      big,
+      cite,
+      code,
+      del,
+      dfn,
+      em,
+      img,
+      ins,
+      kbd,
+      q,
+      s,
+      samp,
+      small,
+      strike,
+      strong,
+      sub,
+      sup,
+      tt,
+      var,
+      b,
+      u,
+      i,
+      center,
+      dl,
+      dt,
+      dd,
+      ol,
+      ul,
+      li,
+      fieldset,
+      form,
+      label,
+      legend,
+      table,
+      caption,
+      tbody,
+      tfoot,
+      thead,
+      tr,
+      th,
+      td,
+      article,
+      aside,
+      canvas,
+      details,
+      embed,
+      figure,
+      figcaption,
+      footer,
+      header,
+      hgroup,
+      menu,
+      nav,
+      output,
+      ruby,
+      section,
+      summary,
+      time,
+      mark,
+      audio,
+      textarea,
+      video,
+      button,
+      input {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-size: 100%;
+        font-family: "Aeonik Mono", ui-monospace, "Courier New", monospace;
+        vertical-align: baseline;
+        text-decoration: none;
+      }
+
+      /* ── Custom Properties ──────────────────────────────────── */
+      :root {
+        --bg:           #F4EFEA;
+        --text:         #383838;
+        --text-muted:   rgba(56,56,56,0.55);
+        --card-bg:      #EDE8E2;
+        --border:       rgba(56,56,56,0.15);
+        --accent:       #383838;
+
+        --font:         "Aeonik Mono", ui-monospace, "Courier New", monospace;
+
+        --header-h-desktop: 90px;
+        --header-h-mobile:  70px;
+
+        --section-pad-v:  100px;
+        --section-pad-h:  48px;
+        --max-width:      1200px;
+
+        scroll-behavior: auto;
+        scroll-padding-top: var(--header-h-desktop);
+      }
+
+      /* ── Base ───────────────────────────────────────────────── */
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 1.125rem;
+        line-height: 1.6;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 0 var(--section-pad-h);
+      }
+
+      /* ── Skip Link ──────────────────────────────────────────── */
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: auto;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        color: var(--text);
+        background: var(--bg);
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        z-index: 9999;
+      }
+      .skip-link:focus {
+        left: var(--section-pad-h);
+        top: 1rem;
+        width: auto;
+        height: auto;
+        overflow: visible;
+      }
+
+      /* ── Header / Navbar ────────────────────────────────────── */
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: var(--header-h-desktop);
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 var(--section-pad-h);
+      }
+
+      .nav-logo {
+        font-size: 1rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+      }
+
+      .nav-links a {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .nav-links a.active {
+        border-bottom: 1px solid var(--text);
+      }
+
+      .hamburger {
+        display: none;
+        cursor: pointer;
+        flex-direction: column;
+        gap: 5px;
+        background: transparent;
+        border: none;
+        padding: 0;
+      }
+
+      .hamburger span {
+        display: block;
+        width: 24px;
+        height: 2px;
+        background: var(--text);
+      }
+
+      /* Mobile nav open state */
+      header.nav-open .nav-links {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: var(--header-h-mobile);
+        left: 0;
+        width: 100%;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem var(--section-pad-h);
+        gap: 1.5rem;
+      }
+
+      /* ── Main offset ────────────────────────────────────────── */
+      main {
+        padding-top: var(--header-h-desktop);
+      }
+
+      /* ── Section: Home ──────────────────────────────────────── */
+      #home {
+        min-height: calc(100vh - var(--header-h-desktop));
+        display: flex;
+        align-items: center;
+        padding: var(--section-pad-v) var(--section-pad-h);
+      }
+
+      .hero-headline {
+        font-size: clamp(3rem, 7vw, 6rem);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: -0.02em;
+        line-height: 1.05;
+        max-width: 800px;
+      }
+
+      .hero-sub {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-top: 1.5rem;
+        max-width: 520px;
+      }
+
+      .btn-outline {
+        display: inline-block;
+        margin-top: 2.5rem;
+        padding: 0.75rem 2rem;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      /* ── Section: About ─────────────────────────────────────── */
+      #about {
+        padding: var(--section-pad-v) var(--section-pad-h);
+      }
+
+      .about-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        align-items: center;
+      }
+
+      .about-image-placeholder {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: var(--card-bg) url('output/PROJECT_01/images/webpage.png') center / cover no-repeat;
+      }
+
+      .section-heading {
+        font-size: clamp(2rem, 4vw, 3.5rem);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: -0.01em;
+        line-height: 1.1;
+        margin-bottom: 1.5rem;
+      }
+
+      .body-copy {
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1.7;
+        color: var(--text-muted);
+      }
+
+      .body-copy + .body-copy {
+        margin-top: 1rem;
+      }
+
+      /* ── Section: Services ──────────────────────────────────── */
+      #services {
+        padding: var(--section-pad-v) var(--section-pad-h);
+        background: var(--card-bg);
+      }
+
+      .services-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        margin-top: 3rem;
+      }
+
+      .service-card {
+        background: var(--bg);
+        padding: 2rem;
+        border: 1px solid var(--border);
+      }
+
+      .service-card h3 {
+        font-size: 1.125rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.75rem;
+      }
+
+      .service-card p {
+        font-size: 1.2rem;
+        font-weight: 700;
+        line-height: 1.6;
+        color: var(--text-muted);
+      }
+
+      /* ── Section: Portfolio ─────────────────────────────────── */
+      #portfolio {
+        padding: var(--section-pad-v) var(--section-pad-h);
+      }
+
+      .portfolio-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+        margin-top: 3rem;
+      }
+
+      .portfolio-tile {
+        border: 1px solid var(--border);
+      }
+
+      .portfolio-tile-image {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: var(--card-bg) url('output/PROJECT_01/images/webpage.png') center / cover no-repeat;
+      }
+
+      .portfolio-tile-body {
+        padding: 1.5rem;
+      }
+
+      .portfolio-tile-body h3 {
+        font-size: 1.125rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.5rem;
+      }
+
+      .portfolio-tile-body p {
+        font-size: 1.2rem;
+        font-weight: 700;
+        line-height: 1.6;
+        color: var(--text-muted);
+      }
+
+      /* ── Section: Contact ───────────────────────────────────── */
+      #contact {
+        padding: var(--section-pad-v) var(--section-pad-h);
+        background: var(--card-bg);
+      }
+
+      .contact-inner {
+        max-width: 600px;
+      }
+
+      .contact-form {
+        margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+      }
+
+      .form-group label {
+        font-size: 0.8125rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .form-group input,
+      .form-group textarea {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        padding: 0.75rem 1rem;
+        font-family: var(--font);
+        font-size: 1rem;
+        color: var(--text);
+        width: 100%;
+        resize: vertical;
+      }
+
+      .form-group textarea {
+        min-height: 130px;
+        resize: vertical;
+      }
+
+      .btn-submit {
+        align-self: flex-start;
+        padding: 0.75rem 2.5rem;
+        border: 1px solid var(--accent);
+        background: transparent;
+        color: var(--accent);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        font-family: var(--font);
+      }
+
+      .contact-meta {
+        margin-top: 2.5rem;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-muted);
+      }
+
+      /* ── Footer ─────────────────────────────────────────────── */
+      footer {
+        padding: 1.5rem var(--section-pad-h);
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      footer p {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 1.5rem;
+        list-style: none;
+      }
+
+      .footer-links a {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      /* ── Responsive: 768px ──────────────────────────────────── */
+      @media (max-width: 768px) {
+        :root {
+          scroll-padding-top: var(--header-h-mobile);
+          --section-pad-h: 20px;
+        }
+
+        header {
+          height: var(--header-h-mobile);
+        }
+
+        main {
+          padding-top: var(--header-h-mobile);
+        }
+
+        #home {
+          min-height: calc(100vh - var(--header-h-mobile));
+        }
+
+        .nav-links {
+          display: none;
+        }
+
+        .hamburger {
+          display: flex;
+        }
+
+        .about-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .services-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .portfolio-grid {
+          grid-template-columns: 1fr;
+        }
+
+        footer {
+          flex-direction: column;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#home" class="skip-link">Skip to content</a>
+
+    <header>
+      <a href="#home" class="nav-logo">LOGO</a>
+      <nav aria-label="Primary navigation">
+        <ul class="nav-links">
+          <li><a href="#home" class="active">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#portfolio">Portfolio</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+      <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </header>
+
+    <main>
+      <section id="home" aria-labelledby="home-heading">
+        <div>
+          <h1 id="home-heading" class="hero-headline">YOUR HEADLINE HERE</h1>
+          <p class="hero-sub">A short subheading that describes what you do in one or two lines.</p>
+          <a href="#about" class="btn-outline">Learn More</a>
+        </div>
+      </section>
+
+      <section id="about" aria-labelledby="about-heading">
+        <div class="about-grid">
+          <div>
+            <h2 id="about-heading" class="section-heading">About Us</h2>
+            <p class="body-copy">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+            <p class="body-copy">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+          </div>
+          <div class="about-image-placeholder" role="img" aria-label="About us image placeholder"></div>
+        </div>
+      </section>
+
+      <section id="services" aria-labelledby="services-heading">
+        <h2 id="services-heading" class="section-heading">Services</h2>
+        <div class="services-grid">
+          <div class="service-card">
+            <h3>Service One</h3>
+            <p>A brief description of this service and the value it provides to clients.</p>
+          </div>
+          <div class="service-card">
+            <h3>Service Two</h3>
+            <p>A brief description of this service and the value it provides to clients.</p>
+          </div>
+          <div class="service-card">
+            <h3>Service Three</h3>
+            <p>A brief description of this service and the value it provides to clients.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="portfolio" aria-labelledby="portfolio-heading">
+        <h2 id="portfolio-heading" class="section-heading">Portfolio</h2>
+        <div class="portfolio-grid">
+          <div class="portfolio-tile">
+            <div class="portfolio-tile-image" role="img" aria-label="Project One image placeholder"></div>
+            <div class="portfolio-tile-body">
+              <h3>Project One</h3>
+              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.</p>
+            </div>
+          </div>
+          <div class="portfolio-tile">
+            <div class="portfolio-tile-image" role="img" aria-label="Project Two image placeholder"></div>
+            <div class="portfolio-tile-body">
+              <h3>Project Two</h3>
+              <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.</p>
+            </div>
+          </div>
+          <div class="portfolio-tile">
+            <div class="portfolio-tile-image" role="img" aria-label="Project Three image placeholder"></div>
+            <div class="portfolio-tile-body">
+              <h3>Project Three</h3>
+              <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore.</p>
+            </div>
+          </div>
+          <div class="portfolio-tile">
+            <div class="portfolio-tile-image" role="img" aria-label="Project Four image placeholder"></div>
+            <div class="portfolio-tile-body">
+              <h3>Project Four</h3>
+              <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione sequi nesciunt.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" aria-labelledby="contact-heading">
+        <div class="contact-inner">
+          <h2 id="contact-heading" class="section-heading">Get In Touch</h2>
+          <form class="contact-form" action="#" method="post" novalidate>
+            <div class="form-group">
+              <label for="contact-name">Name</label>
+              <input type="text" id="contact-name" name="name" autocomplete="name" placeholder="Your name">
+            </div>
+            <div class="form-group">
+              <label for="contact-email">Email</label>
+              <input type="email" id="contact-email" name="email" autocomplete="email" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+              <label for="contact-message">Message</label>
+              <textarea id="contact-message" name="message" placeholder="How can we help?"></textarea>
+            </div>
+            <button type="submit" class="btn-submit">Send Message</button>
+          </form>
+          <p class="contact-meta">Or reach us at hello@yoursite.com</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2026 Your Name</p>
+      <ul class="footer-links">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#portfolio">Portfolio</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </footer>
+
+    <script>
+      const header = document.querySelector('header');
+      const hamburger = document.querySelector('.hamburger');
+      const navLinks = document.querySelectorAll('.nav-links a');
+
+      hamburger.addEventListener('click', function () {
+        const isOpen = header.classList.toggle('nav-open');
+        hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+
+      navLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+          header.classList.remove('nav-open');
+          hamburger.setAttribute('aria-expanded', 'false');
+        });
+      });
+    </script>
+  </body>
+</html>
