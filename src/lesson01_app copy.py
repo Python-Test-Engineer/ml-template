@@ -2,13 +2,12 @@
 Lesson 01: Multi-Agent Collaboration Dashboard
 Data Science Detective Agency — Educational Shiny App
 
-All processing is local (pandas/Python) — no API calls required:
-  - DataCleaner   -> detects nulls, outliers, duplicates
-  - Statistician  -> computes mean/std per numeric column
-  - Visualizer    -> builds Plotly bar chart + title/insight
-  - Reporter      -> assembles Markdown report
+Each agent is a real Claude claude-opus-4-6 API call with a specialized system prompt:
+  - DataCleaner   -> structured output (Pydantic) to find dirty rows
+  - Statistician  -> structured output (Pydantic) to compute summary stats
+  - Visualizer    -> structured output (Pydantic) for chart title + insight
+  - Reporter      -> free-text Markdown report
 
-Upload any CSV; the agents investigate it autonomously.
 Results are assigned display_after timestamps; the UI polls every 1 s.
 """
 
@@ -20,6 +19,10 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any
 
+import re
+from pathlib import Path
+
+import anthropic
 import markdown2
 import pandas as pd
 import plotly.graph_objects as go
@@ -32,36 +35,36 @@ from shiny import App, reactive, render, ui
 
 console = Console()
 
+# Lazy-initialised so the import doesn't fail if the key is missing at startup.
+_client: anthropic.Anthropic | None = None
 
-def _read_csv_smart(path: str) -> pd.DataFrame:
-    """Try common encodings until one succeeds."""
-    for enc in ("utf-8", "utf-8-sig", "latin-1", "cp1252"):
-        try:
-            return pd.read_csv(path, encoding=enc)
-        except UnicodeDecodeError:
-            continue
-    raise ValueError("Could not decode CSV with any common encoding")
+
+def _get_client() -> anthropic.Anthropic:
+    global _client
+    if _client is None:
+        _client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+    return _client
 
 
 # ---------------------------------------------------------------------------
-# 1. Sample / fallback dataset
+# 1. Synthetic dataset
 # ---------------------------------------------------------------------------
 
-_SAMPLE_NAMES = [
+SUBJECTS = ["Math", "Science", "English", "History", "Art"]
+STUDENT_NAMES = [
     "Alice", "Bob", "Carol", "David", "Eva", "Frank", "Grace", "Hiro",
     "Iris", "Jake", "Kira", "Leo", "Mia", "Noah", "Olivia", "Pete",
     "Quinn", "Rosa", "Sam", "Tina", "Uma", "Vince", "Wendy", "Xander",
     "Yara", "Zoe", "Amir", "Bella", "Caden", "Dana",
 ]
-_SAMPLE_SUBJECTS = ["Math", "Science", "English", "History", "Art"]
 
 
-def _generate_sample_df() -> pd.DataFrame:
+def generate_grades_df() -> pd.DataFrame:
     random.seed(42)
     rows = []
-    for i, name in enumerate(_SAMPLE_NAMES):
+    for i, name in enumerate(STUDENT_NAMES):
         row: dict[str, Any] = {"student_id": i + 1, "name": name}
-        for subj in _SAMPLE_SUBJECTS:
+        for subj in SUBJECTS:
             grade = random.randint(50, 100)
             if name in ("Frank", "Pete") and subj == "Math":
                 grade = None
@@ -87,12 +90,12 @@ AGENT_COLORS = {
     "SYSTEM": "#7F8C8D",
 }
 AGENT_ICONS = {
-    "Manager": "Detective",
-    "DataCleaner": "Cleaner",
-    "Statistician": "Stats",
-    "Visualizer": "Viz",
-    "Reporter": "Report",
-    "SYSTEM": "System",
+    "Manager": "🕵️",
+    "DataCleaner": "🧹",
+    "Statistician": "📊",
+    "Visualizer": "🎨",
+    "Reporter": "📝",
+    "SYSTEM": "🖥️",
 }
 
 
@@ -130,9 +133,8 @@ _reset_state()
 
 
 # ---------------------------------------------------------------------------
-# 4. Pydantic models
+# 4. Pydantic models for structured agent outputs
 # ---------------------------------------------------------------------------
-
 
 class DirtyRow(BaseModel):
     index: int
@@ -144,16 +146,16 @@ class DataCleanerResult(BaseModel):
     summary: str
 
 
-class ColumnStat(BaseModel):
-    column: str
+class SubjectStat(BaseModel):
+    subject: str
     mean: float
     std: float
 
 
 class StatisticianResult(BaseModel):
-    column_stats: list[ColumnStat]
+    subject_stats: list[SubjectStat]
     overall_mean: float
-    top_column: str
+    top_subject: str
     findings: str
 
 
@@ -163,140 +165,42 @@ class VisualizerResult(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# 5. Local agent implementations (no API calls)
+# 5. Agent system prompts — loaded from .claude/agents/*.md
 # ---------------------------------------------------------------------------
 
-
-def _local_data_cleaner(df: pd.DataFrame) -> DataCleanerResult:
-    numeric_cols = df.select_dtypes(include="number").columns.tolist()
-    col_bounds: dict[str, tuple[float, float]] = {}
-    for col in numeric_cols:
-        vals = df[col].dropna()
-        if len(vals) > 1:
-            col_bounds[col] = (float(vals.mean()), float(vals.std()))
-
-    dirty: list[DirtyRow] = []
-    seen: set[tuple] = set()
-    for idx, row in df.iterrows():
-        reasons: list[str] = []
-        key = tuple(None if pd.isna(v) else v for v in row)
-        if key in seen:
-            reasons.append("duplicate row")
-        else:
-            seen.add(key)
-        for col in df.columns:
-            if pd.isna(row[col]):
-                reasons.append(f"missing value in '{col}'")
-        for col in numeric_cols:
-            val = row[col]
-            if pd.notna(val) and col in col_bounds:
-                m, s = col_bounds[col]
-                if s > 0 and abs(val - m) > 3 * s:
-                    reasons.append(f"anomalous value in '{col}' ({val})")
-        if reasons:
-            dirty.append(DirtyRow(index=int(idx), reason="; ".join(reasons)))
-
-    n = len(dirty)
-    summary = (
-        f"{n} dirty row(s) found out of {len(df)} total."
-        if n > 0
-        else f"All {len(df)} rows passed quality checks."
-    )
-    return DataCleanerResult(dirty_rows=dirty, summary=summary)
+_AGENTS_DIR = Path(__file__).parent.parent / ".claude" / "agents"
+_AGENT_FILE_MAP = {
+    "DataCleaner": "data-cleaner.md",
+    "Statistician": "statistician.md",
+    "Visualizer": "visualizer.md",
+    "Reporter": "reporter.md",
+}
 
 
-def _local_statistician(clean_df: pd.DataFrame) -> StatisticianResult:
-    numeric_cols = clean_df.select_dtypes(include="number").columns.tolist()
-    analysis_cols = [
-        c for c in numeric_cols
-        if not ("id" in c.lower() and clean_df[c].nunique() == len(clean_df))
-    ]
-    col_stats: list[ColumnStat] = []
-    all_vals: list[float] = []
-    for col in analysis_cols:
-        vals = clean_df[col].dropna()
-        if len(vals) == 0:
-            continue
-        mean = round(float(vals.mean()), 2)
-        std = round(float(vals.std(ddof=1)), 2) if len(vals) > 1 else 0.0
-        col_stats.append(ColumnStat(column=col, mean=mean, std=std))
-        all_vals.extend(vals.tolist())
-
-    overall_mean = round(float(pd.Series(all_vals).mean()), 2) if all_vals else 0.0
-    top = max(col_stats, key=lambda s: s.mean) if col_stats else None
-    top_column = top.column if top else ""
-    findings = (
-        f"Across {len(col_stats)} numeric column(s), the overall mean is {overall_mean}. "
-        f"{top_column} has the highest average at {top.mean}."
-        if top
-        else "No numeric columns found."
-    )
-    return StatisticianResult(
-        column_stats=col_stats,
-        overall_mean=overall_mean,
-        top_column=top_column,
-        findings=findings,
-    )
+def _load_agent_prompt(agent_name: str) -> str:
+    """Extract the system prompt body from a .claude/agents/*.md file."""
+    path = _AGENTS_DIR / _AGENT_FILE_MAP[agent_name]
+    text = path.read_text(encoding="utf-8")
+    # Strip YAML frontmatter (everything between the first pair of --- delimiters)
+    body = re.sub(r"^---\n.*?\n---\n", "", text, count=1, flags=re.DOTALL)
+    return body.strip()
 
 
-def _local_visualizer(
-    means: dict[str, float], overall_mean: float, top_column: str
-) -> VisualizerResult:
-    top_val = means.get(top_column, 0)
-    title = f"Average by Column — {top_column} Leads at {top_val}"[:69]
-    spread = round(max(means.values()) - min(means.values()), 2) if len(means) > 1 else 0
-    insight = (
-        f"{top_column} leads with an average of {top_val}; "
-        f"the overall mean is {overall_mean} and values span a range of {spread}."
-    )
-    return VisualizerResult(chart_title=title, insight=insight)
-
-
-def _local_reporter(
-    dirty_indices: list[int],
-    reasons: list[str],
-    dc_summary: str,
-    overall_mean: float,
-    top_column: str,
-    means: dict[str, float],
-    stds: dict[str, float],
-    st_findings: str,
-    vz_insight: str,
-) -> str:
-    bullets = "\n".join(
-        f"- **{col}**: mean {means[col]}, std {stds.get(col, 'N/A')}" for col in means
-    )
-    issues = "; ".join(reasons) if reasons else "none"
-    return f"""# Case Report: Dataset Investigation
-
-## Data Quality
-- **{len(dirty_indices)}** dirty row(s) removed.
-- Issues found: {issues}.
-- {dc_summary}
-
-## Statistical Findings
-- Overall mean: **{overall_mean}**
-- Top column: **{top_column}** (avg {means.get(top_column, '?')})
-- Per-column statistics:
-{bullets}
-- {st_findings}
-
-## Conclusion
-{vz_insight} Investigate flagged rows for data entry errors or collection issues. \
-Consider **{top_column}** as the key metric for further analysis.
-
-*--- Assembled by the Data Science Detective Agency*"""
+AGENT_SYSTEMS: dict[str, str] = {
+    name: _load_agent_prompt(name)
+    for name in _AGENT_FILE_MAP
+}
 
 
 # ---------------------------------------------------------------------------
-# 6. Investigation runner — all local processing
+# 6. Investigation runner — calls real Claude API for each agent
 # ---------------------------------------------------------------------------
 
 MSG_STYLE = {
-    "task": ("bold blue", "[TASK]"),
-    "update": ("yellow", "[UPDATE]"),
-    "result": ("bold green", "[RESULT]"),
-    "complete": ("bold magenta", "[DONE]"),
+    "task": ("bold blue", "📋 TASK"),
+    "update": ("yellow", "💬 UPDATE"),
+    "result": ("bold green", "📤 RESULT"),
+    "complete": ("bold magenta", "🏁 DONE"),
 }
 AGENT_RICH_COLORS = {
     "Manager": "bright_blue",
@@ -308,23 +212,36 @@ AGENT_RICH_COLORS = {
 }
 
 
-def _run_investigation(df: pd.DataFrame, interval: float = 1.0) -> None:
-    """Run all agents locally; stream messages to the UI via shared globals."""
+def _run_investigation(interval: float = 1.0) -> None:
+    """Call Claude API for each agent; write directly to live globals so the
+    UI sees messages as they are emitted rather than all at the end."""
     global _state_schedule, _results, _done_after
 
+    console.print(
+        Panel(
+            "[bold white]🕵️ The Data Science Detective Agency[/]\n"
+            f"[dim]Calling Claude API sub-agents — messages stream every {interval:.0f} s[/]",
+            style="on dark_blue",
+            border_style="bright_blue",
+        )
+    )
+
+    client = _get_client()
     t0 = time.time()
     delay = 0.0
     first_msg = True
 
+    # Write directly into the live global so the UI picks up messages
+    # as they are emitted (not all at the end).
     def emit(msg: AgentMessage) -> None:
         nonlocal delay, first_msg
         msg.display_after = t0 + delay
-        _message_log.append(msg)
+        _message_log.append(msg)          # live write — UI sees this on next tick
         style, label = MSG_STYLE.get(msg.msg_type, ("white", msg.msg_type.upper()))
         sender_color = AGENT_RICH_COLORS.get(msg.sender, "white")
         console.print(
-            f"  [dim]+{delay:5.1f}s[/]  [{sender_color}]{msg.sender:<12}[/]"
-            f"[dim]-> {msg.recipient:<12}[/]  [{style}]{label}[/]  [white]{msg.content}[/]"
+            f"  [dim]+{delay:5.1f}s[/]  [{sender_color}]{AGENT_ICONS.get(msg.sender, '🖥️')} {msg.sender:<12}[/]"
+            f"[dim]→ {msg.recipient:<12}[/]  [{style}]{label}[/]  [white]{msg.content}[/]"
         )
         if first_msg:
             first_msg = False
@@ -332,91 +249,141 @@ def _run_investigation(df: pd.DataFrame, interval: float = 1.0) -> None:
             delay += interval
 
     def state_now(agent: str, state: str) -> None:
-        _state_schedule.append((t0 + delay, agent, state))
+        _state_schedule.append((t0 + delay, agent, state))  # live write
+        icons = {"working": "⚡", "done": "✅"}
+        console.print(
+            f"  [dim]       [/]  [dim italic]{agent} → {icons.get(state, '')} {state.upper()}[/]"
+        )
 
-    numeric_cols = df.select_dtypes(include="number").columns.tolist()
-    n_rows, n_cols = df.shape
-    col_summary = f"{n_rows} rows x {n_cols} columns ({len(numeric_cols)} numeric)"
-    console.print(f"\n[bold]Dataset:[/] {col_summary}\n")
+    df = generate_grades_df()
+    console.print(f"\n[bold]Dataset:[/] {len(df)} rows × {len(SUBJECTS)} subjects generated\n")
 
-    # Manager intro
-    emit(AgentMessage("SYSTEM", "ALL", "Investigation started! Manager online.", "task"))
+    # ── Manager intro ────────────────────────────────────────────────────────
+    emit(AgentMessage("SYSTEM", "ALL", "🚀 Investigation started! Manager Agent is online.", "task"))
     emit(AgentMessage(
         "Manager", "ALL",
-        f"Dataset loaded: {col_summary}. Columns: {', '.join(df.columns.tolist())}. "
-        "Dispatching sub-agents...",
+        f"Dataset loaded: {len(df)} students, {len(SUBJECTS)} subjects. "
+        "Dispatching sub-agents via Claude API...",
         "update",
     ))
 
-    # DataCleaner
+    # ── DataCleaner ──────────────────────────────────────────────────────────
+    console.print("\n[bold dark_orange]── DataCleaner Phase ──[/]")
     state_now("DataCleaner", "working")
-    emit(AgentMessage("Manager", "DataCleaner", "Find all dirty rows in the dataset.", "task"))
-    emit(AgentMessage("DataCleaner", "ALL", "Scanning for nulls, outliers, duplicates...", "update"))
+    emit(AgentMessage("Manager", "DataCleaner", "Investigate the dataset for missing values and anomalies.", "task"))
+    emit(AgentMessage("DataCleaner", "ALL", "Scanning dataset for dirty rows...", "update"))
+    # Emitted BEFORE the API call — visible in UI during the wait
+    emit(AgentMessage("SYSTEM", "ALL", "⏳ DataCleaner → Claude API call in progress...", "update"))
 
-    dc: DataCleanerResult = _local_data_cleaner(df)
+    df_csv = df.to_csv()
+    console.print("  [dim]→ DataCleaner: calling Claude API...[/]")
+    dc_resp = client.messages.parse(
+        model="claude-opus-4-6",
+        max_tokens=1024,
+        system=AGENT_SYSTEMS["DataCleaner"],
+        messages=[{
+            "role": "user",
+            "content": f"Analyze this student grades dataset and identify all dirty rows.\n\nDataset (CSV):\n{df_csv}",
+        }],
+        output_format=DataCleanerResult,
+    )
+    dc: DataCleanerResult = dc_resp.parsed_output
     dirty_indices = [r.index for r in dc.dirty_rows]
     reasons = [r.reason for r in dc.dirty_rows]
     clean_df = df.drop(index=dirty_indices).reset_index(drop=True)
+    console.print(f"  [dim]Dirty rows: {len(dirty_indices)} — {'; '.join(reasons)}[/]")
 
     emit(AgentMessage(
         "DataCleaner", "Manager",
-        f"Found {len(dirty_indices)} dirty row(s). {dc.summary} Rows flagged for removal.",
+        f"Found {len(dirty_indices)} dirty row(s): {', '.join(reasons)}. Flagging for removal.",
         "result",
     ))
     state_now("DataCleaner", "done")
-    emit(AgentMessage("DataCleaner", "ALL", f"Done. Clean dataset: {len(clean_df)} rows.", "complete"))
+    emit(AgentMessage("DataCleaner", "ALL", f"{dc.summary} Clean dataset: {len(clean_df)} rows.", "complete"))
 
-    # Statistician
+    # ── Statistician ─────────────────────────────────────────────────────────
+    console.print("\n[bold green]── Statistician Phase ──[/]")
     emit(AgentMessage("Manager", "ALL", "DataCleaner done. Dispatching Statistician...", "update"))
     state_now("Statistician", "working")
     emit(AgentMessage("Manager", "Statistician", "Compute summary statistics on the clean dataset.", "task"))
-    emit(AgentMessage("Statistician", "ALL", "Computing mean and std per numeric column...", "update"))
+    emit(AgentMessage("Statistician", "ALL", "Preparing statistical analysis...", "update"))
+    emit(AgentMessage("SYSTEM", "ALL", "⏳ Statistician → Claude API call in progress...", "update"))
 
-    st: StatisticianResult = _local_statistician(clean_df)
-    means = {s.column: s.mean for s in st.column_stats}
-    stds = {s.column: s.std for s in st.column_stats}
-    top_column = st.top_column
+    clean_csv = clean_df[["name"] + SUBJECTS].to_csv(index=False)
+    console.print("  [dim]→ Statistician: calling Claude API...[/]")
+    st_resp = client.messages.parse(
+        model="claude-opus-4-6",
+        max_tokens=1024,
+        system=AGENT_SYSTEMS["Statistician"],
+        messages=[{
+            "role": "user",
+            "content": f"Compute summary statistics for this clean student grades dataset.\n\nDataset (CSV):\n{clean_csv}",
+        }],
+        output_format=StatisticianResult,
+    )
+    st: StatisticianResult = st_resp.parsed_output
+    means = {s.subject: s.mean for s in st.subject_stats}
+    stds = {s.subject: s.std for s in st.subject_stats}
+    top_subject = st.top_subject
     overall_mean = st.overall_mean
 
-    stats_table = Table("Column", "Mean", "Std", box=box.SIMPLE, style="dim")
-    for s in st.column_stats:
-        stats_table.add_row(s.column, str(s.mean), str(s.std))
+    stats_table = Table("Subject", "Mean", "Std", box=box.SIMPLE, style="dim")
+    for s in st.subject_stats:
+        stats_table.add_row(s.subject, str(s.mean), str(s.std))
     console.print(stats_table)
+    console.print(f"  [green]Overall mean: {overall_mean}  |  Top subject: {top_subject}[/]")
 
     emit(AgentMessage(
         "Statistician", "Manager",
-        f"Overall mean: {overall_mean}. Top column: {top_column} (avg {means.get(top_column, '?')}). {st.findings}",
+        f"Overall mean: {overall_mean}. Top subject: {top_subject} "
+        f"(avg {means.get(top_subject, '?')}). {st.findings}",
         "result",
     ))
     state_now("Statistician", "done")
     emit(AgentMessage("Statistician", "ALL", "Statistics complete!", "complete"))
 
-    # Visualizer
+    # ── Visualizer ───────────────────────────────────────────────────────────
+    console.print("\n[bold magenta]── Visualizer Phase ──[/]")
     emit(AgentMessage("Manager", "ALL", "Stats ready. Dispatching Visualizer...", "update"))
     state_now("Visualizer", "working")
-    emit(AgentMessage("Manager", "Visualizer", "Build a bar chart of average values per column.", "task"))
-    emit(AgentMessage("Visualizer", "ALL", "Designing chart...", "update"))
+    emit(AgentMessage("Manager", "Visualizer", "Produce a bar chart of average grades per subject.", "task"))
+    emit(AgentMessage("Visualizer", "ALL", "Designing chart layout...", "update"))
+    emit(AgentMessage("SYSTEM", "ALL", "⏳ Visualizer → Claude API call in progress...", "update"))
 
-    vz: VisualizerResult = _local_visualizer(means, overall_mean, top_column)
+    console.print("  [dim]→ Visualizer: calling Claude API...[/]")
+    vz_resp = client.messages.parse(
+        model="claude-opus-4-6",
+        max_tokens=512,
+        system=AGENT_SYSTEMS["Visualizer"],
+        messages=[{
+            "role": "user",
+            "content": (
+                f"Subject averages: {means}\n"
+                f"Overall mean: {overall_mean}\n"
+                f"Top subject: {top_subject}\n"
+                "Recommend a chart title and a one-sentence insight."
+            ),
+        }],
+        output_format=VisualizerResult,
+    )
+    vz: VisualizerResult = vz_resp.parsed_output
 
-    bar_colors = ["#4A90D9", "#E67E22", "#27AE60", "#8E44AD", "#C0392B",
-                  "#1ABC9C", "#E74C3C", "#3498DB", "#F39C12", "#9B59B6"]
-    cols_ordered = list(means.keys())
+    bar_colors = ["#4A90D9", "#E67E22", "#27AE60", "#8E44AD", "#C0392B"]
+    subjects_ordered = list(means.keys())
     fig = go.Figure(
         go.Bar(
-            x=cols_ordered,
-            y=[means[c] for c in cols_ordered],
-            marker_color=bar_colors[: len(cols_ordered)],
-            text=[f"{means[c]:.1f}" for c in cols_ordered],
+            x=subjects_ordered,
+            y=[means[s] for s in subjects_ordered],
+            marker_color=bar_colors[: len(subjects_ordered)],
+            text=[f"{means[s]:.1f}" for s in subjects_ordered],
             textposition="outside",
         )
     )
-    y_max = max(means.values()) * 1.15 if means else 110
     fig.update_layout(
         title=vz.chart_title,
-        xaxis_title="Column",
-        yaxis_title="Average Value",
-        yaxis_range=[0, y_max],
+        xaxis_title="Subject",
+        yaxis_title="Average Grade",
+        yaxis_range=[0, 110],
         plot_bgcolor="white",
         paper_bgcolor="#F8F9FA",
         font=dict(family="monospace", size=13),
@@ -425,38 +392,61 @@ def _run_investigation(df: pd.DataFrame, interval: float = 1.0) -> None:
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor="#E0E0E0")
-    _results["fig"] = fig
+    _results["fig"] = fig  # available for the UI as soon as it's built
+    console.print(f"  [magenta]Chart title: '{vz.chart_title}'[/]")
 
-    emit(AgentMessage("Visualizer", "Manager", f"Chart ready: '{vz.chart_title}'. {vz.insight}", "result"))
+    emit(AgentMessage("Visualizer", "Manager", f"Chart ready — '{vz.chart_title}'. {vz.insight}", "result"))
     state_now("Visualizer", "done")
     emit(AgentMessage("Visualizer", "ALL", "Visualization complete!", "complete"))
 
-    # Reporter
+    # ── Reporter ─────────────────────────────────────────────────────────────
+    console.print("\n[bold red]── Reporter Phase ──[/]")
     emit(AgentMessage("Manager", "ALL", "All data ready. Dispatching Reporter...", "update"))
     state_now("Reporter", "working")
-    emit(AgentMessage("Manager", "Reporter", "Assemble the final investigation report.", "task"))
+    emit(AgentMessage("Manager", "Reporter", "Assemble the final investigation report from all findings.", "task"))
     emit(AgentMessage("Reporter", "ALL", "Reviewing all findings...", "update"))
+    emit(AgentMessage("SYSTEM", "ALL", "⏳ Reporter → Claude API call in progress...", "update"))
 
-    report_text = _local_reporter(
-        dirty_indices=dirty_indices,
-        reasons=reasons,
-        dc_summary=dc.summary,
-        overall_mean=overall_mean,
-        top_column=top_column,
-        means=means,
-        stds=stds,
-        st_findings=st.findings,
-        vz_insight=vz.insight,
+    findings_context = (
+        f"DataCleaner findings:\n"
+        f"- {len(dirty_indices)} dirty rows removed (indices: {dirty_indices})\n"
+        f"- Issues: {'; '.join(reasons) if reasons else 'none'}\n"
+        f"- {dc.summary}\n\n"
+        f"Statistician findings:\n"
+        f"- Overall mean grade: {overall_mean}\n"
+        f"- Top subject: {top_subject} (avg {means.get(top_subject, '?')})\n"
+        f"- Subject averages: {means}\n"
+        f"- Subject std devs: {stds}\n"
+        f"- {st.findings}\n\n"
+        f"Visualizer findings:\n"
+        f"- Chart title: '{vz.chart_title}'\n"
+        f"- Insight: {vz.insight}\n"
     )
-    _results["report"] = report_text
+    console.print("  [dim]→ Reporter: calling Claude API...[/]")
+    rp_resp = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=1024,
+        system=AGENT_SYSTEMS["Reporter"],
+        messages=[{"role": "user", "content": findings_context}],
+    )
+    report_text = rp_resp.content[0].text
+    _results["report"] = report_text  # available for the UI immediately
 
     emit(AgentMessage("Reporter", "Manager", "Final report assembled and ready.", "result"))
     state_now("Reporter", "done")
-    emit(AgentMessage("Reporter", "ALL", "Investigation complete! Case closed.", "complete"))
-    emit(AgentMessage("Manager", "ALL", "All agents done. Investigation closed!", "complete"))
+    emit(AgentMessage("Reporter", "ALL", "Investigation complete! Case closed. 🎉", "complete"))
+    emit(AgentMessage("Manager", "ALL", "All agents have completed their tasks. Investigation closed! 🎉", "complete"))
 
     _done_after = _message_log[-1].display_after
-    console.print(f"[green]Done! {len(_message_log)} messages over {delay:.0f} s.[/]")
+
+    console.print(
+        Panel(
+            f"[bold green]✅ Done![/]  {len(_message_log)} messages over {delay:.0f} s\n"
+            "[dim]4 Claude API calls: DataCleaner · Statistician · Visualizer · Reporter[/]",
+            style="on dark_green",
+            border_style="green",
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -466,7 +456,7 @@ def _run_investigation(df: pd.DataFrame, interval: float = 1.0) -> None:
 
 def _badge(status: str) -> ui.Tag:
     colors = {"waiting": "#95A5A6", "working": "#F39C12", "done": "#27AE60"}
-    labels = {"waiting": "Waiting", "working": "Working", "done": "Done"}
+    labels = {"waiting": "⏳ Waiting", "working": "⚡ Working", "done": "✅ Done"}
     return ui.tags.span(
         labels.get(status, status),
         style=(
@@ -484,19 +474,39 @@ TASK_DESCRIPTIONS = {
 }
 
 
+def _task_card(agent: str, status: str) -> ui.Tag:
+    icon = AGENT_ICONS.get(agent, "🤖")
+    color = AGENT_COLORS.get(agent, "#555")
+    return ui.div(
+        ui.div(
+            ui.tags.span(f"{icon} {agent}", style=f"font-weight:bold;color:{color};"),
+            ui.tags.span(
+                f" — {TASK_DESCRIPTIONS[agent]}", style="color:#555;font-size:0.85em;"
+            ),
+            style="margin-bottom:6px;",
+        ),
+        _badge(status),
+        style=(
+            "background:white;border:1px solid #E0E0E0;border-radius:10px;"
+            f"padding:10px 14px;margin-bottom:8px;border-left:4px solid {color};"
+        ),
+    )
+
+
 def _message_bubble(msg: AgentMessage) -> ui.Tag:
     color = AGENT_COLORS.get(msg.sender, "#555")
+    icon = AGENT_ICONS.get(msg.sender, "🤖")
     type_labels = {
-        "task": "TASK",
-        "update": "UPDATE",
-        "result": "RESULT",
-        "complete": "DONE",
+        "task": "📋 TASK",
+        "update": "💬 UPDATE",
+        "result": "📤 RESULT",
+        "complete": "🏁 DONE",
     }
     ts = time.strftime("%H:%M:%S", time.localtime(msg.timestamp))
     return ui.div(
         ui.div(
-            ui.tags.span(f"{msg.sender}", style=f"font-weight:bold;color:{color};"),
-            ui.tags.span(f" -> {msg.recipient}", style="color:#888;font-size:0.85em;"),
+            ui.tags.span(f"{icon} {msg.sender}", style=f"font-weight:bold;color:{color};"),
+            ui.tags.span(f" → {msg.recipient}", style="color:#888;font-size:0.85em;"),
             ui.tags.span(
                 f"  [{type_labels.get(msg.msg_type, msg.msg_type)}]",
                 style=f"color:{color};font-size:0.75em;margin-left:6px;",
@@ -514,6 +524,7 @@ def _message_bubble(msg: AgentMessage) -> ui.Tag:
 
 
 def _agent_status_card(agent: str, status: str) -> ui.Tag:
+    icon = AGENT_ICONS.get(agent, "🤖")
     color = AGENT_COLORS.get(agent, "#555")
     roles = {
         "DataCleaner": "Finds dirty rows & anomalies",
@@ -523,7 +534,10 @@ def _agent_status_card(agent: str, status: str) -> ui.Tag:
     }
     return ui.div(
         ui.div(
-            ui.tags.span(agent, style=f"font-weight:bold;color:{color};font-size:0.95em;"),
+            ui.tags.span(icon, style="font-size:1.3em;margin-right:6px;"),
+            ui.tags.span(
+                agent, style=f"font-weight:bold;color:{color};font-size:0.95em;"
+            ),
             style="margin-bottom:3px;",
         ),
         ui.div(
@@ -543,6 +557,7 @@ def _agent_status_card(agent: str, status: str) -> ui.Tag:
 
 app_ui = ui.page_fluid(
     ui.busy_indicators.use(spinners=False, pulse=False, fade=False),
+    # Keep the WebSocket alive while background API calls run (ping every 20 s)
     ui.tags.script(
         """
         setInterval(function() {
@@ -555,6 +570,27 @@ app_ui = ui.page_fluid(
     ui.tags.script(
         """
         (function() {
+            var p = new URLSearchParams(window.location.search);
+            if (p.get('autostart') !== '1') return;
+            var started = false;
+            var iv = setInterval(function() {
+                if (started) { clearInterval(iv); return; }
+                var btn = document.getElementById('start_btn');
+                if (btn && btn.classList.contains('shiny-bound-input')) {
+                    started = true;
+                    clearInterval(iv);
+                    var sel = document.getElementById('interval');
+                    if (sel) { sel.value = '1'; sel.dispatchEvent(new Event('change')); }
+                    btn.click();
+                }
+            }, 200);
+        })();
+    """
+    ),
+    ui.tags.script(
+        """
+        (function() {
+            // Watch for the results panel and scroll to it
             var scrolled = false;
             var observer = new MutationObserver(function() {
                 if (scrolled) return;
@@ -586,27 +622,6 @@ app_ui = ui.page_fluid(
             text-transform: uppercase; letter-spacing: 0.05em;
             padding-bottom: 8px; margin-bottom: 14px;
             border-bottom: 2px solid #E0E0E0;
-        }
-        .upload-zone {
-            background: white; border: 2px dashed #C0C0C0; border-radius: 12px;
-            padding: 16px 20px; margin: 0 16px 16px;
-            display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-        }
-        .upload-zone .shiny-input-container { margin-bottom: 0 !important; }
-        .data-preview {
-            background: white; border-radius: 10px; border: 1px solid #E0E0E0;
-            padding: 12px 16px; margin: 0 16px 16px; font-size: 0.82em;
-            font-family: monospace; overflow-x: auto;
-        }
-        .data-preview table { border-collapse: collapse; width: 100%; }
-        .data-preview th {
-            background: #F0F2F5; padding: 4px 10px;
-            border: 1px solid #E0E0E0; text-align: left; font-size: 0.9em;
-        }
-        .data-preview td {
-            padding: 3px 10px; border: 1px solid #F0F0F0;
-            white-space: nowrap; max-width: 160px; overflow: hidden;
-            text-overflow: ellipsis;
         }
         .msg-log { height: 420px; overflow-y: auto; padding: 4px 0; }
         .results-panel {
@@ -643,45 +658,15 @@ app_ui = ui.page_fluid(
     """
     ),
     ui.div(
-        ui.tags.h2("The Data Science Detective Agency"),
+        ui.tags.h2("🕵️ The Data Science Detective Agency"),
         ui.tags.p(
-            "Lesson 01: Multi-Agent Collaboration — Upload any CSV and let local agents investigate it"
+            "Lesson 01: Multi-Agent Collaboration — Real Claude API sub-agents solving a mystery dataset"
         ),
         class_="header-bar",
     ),
-    # Upload zone
     ui.div(
-        ui.div(
-            ui.input_file(
-                "csv_file",
-                "Upload a CSV file to investigate:",
-                accept=[".csv"],
-                button_label="Browse...",
-                placeholder="No file selected",
-                width="340px",
-            ),
-            style="flex:1;",
-        ),
-        ui.div(
-            ui.tags.span("— or —", style="color:#aaa;font-size:0.9em;margin-right:10px;"),
-            ui.input_action_button(
-                "use_sample_btn",
-                "Use sample grades data",
-                style=(
-                    "background:#4A90D9;color:white;border:none;"
-                    "border-radius:6px;padding:6px 14px;cursor:pointer;font-size:0.9em;"
-                ),
-            ),
-        ),
-        ui.output_ui("file_info"),
-        class_="upload-zone",
-    ),
-    # Data preview
-    ui.output_ui("data_preview"),
-    # Toolbar
-    ui.div(
-        ui.input_action_button("start_btn", "Start Investigation", class_="start-btn"),
-        ui.input_action_button("clear_btn", "Clear", class_="clear-btn"),
+        ui.input_action_button("start_btn", "▶ Start Investigation", class_="start-btn"),
+        ui.input_action_button("clear_btn", "✕ Clear", class_="clear-btn"),
         ui.input_select(
             "interval",
             None,
@@ -701,7 +686,7 @@ app_ui = ui.page_fluid(
     ),
     ui.layout_columns(
         ui.div(
-            ui.div("Live Message Log", class_="panel-title"),
+            ui.div("💬 Live Message Log", class_="panel-title"),
             ui.div(ui.output_ui("message_log"), class_="msg-log", id="msg-log-div"),
             ui.tags.script(
                 """
@@ -722,7 +707,7 @@ app_ui = ui.page_fluid(
             style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;",
         ),
         ui.div(
-            ui.div("Agent Status", class_="panel-title"),
+            ui.div("🤖 Agent Status", class_="panel-title"),
             ui.output_ui("agent_cards"),
             style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;",
         ),
@@ -736,7 +721,6 @@ app_ui = ui.page_fluid(
 def app_server(input, output, session):
 
     clock = reactive.Value(0)
-    active_df: reactive.Value[pd.DataFrame | None] = reactive.Value(None)
 
     @reactive.effect
     def _tick():
@@ -744,68 +728,9 @@ def app_server(input, output, session):
         with reactive.isolate():
             clock.set(clock() + 1)
 
-    @reactive.effect
-    @reactive.event(input.csv_file)
-    def _on_upload():
-        f = input.csv_file()
-        if not f:
-            return
-        try:
-            df = _read_csv_smart(f[0]["datapath"])
-            active_df.set(df)
-        except Exception as exc:
-            console.print(f"[red]Error reading uploaded file: {exc}[/]")
-
-    @reactive.effect
-    @reactive.event(input.use_sample_btn)
-    def _on_sample():
-        active_df.set(_generate_sample_df())
-
-    @output
-    @render.ui
-    def file_info():
-        df = active_df()
-        if df is None:
-            return ui.div()
-        n_rows, n_cols = df.shape
-        numeric = df.select_dtypes(include="number").shape[1]
-        return ui.tags.span(
-            f"{n_rows} rows, {n_cols} cols, {numeric} numeric",
-            style=(
-                "background:#27AE60;color:white;padding:4px 12px;"
-                "border-radius:20px;font-size:0.82em;font-weight:bold;"
-            ),
-        )
-
-    @output
-    @render.ui
-    def data_preview():
-        df = active_df()
-        if df is None:
-            return ui.div()
-        preview = df.head(5)
-        header = "".join(f"<th>{c}</th>" for c in preview.columns)
-        rows_html = ""
-        for _, row in preview.iterrows():
-            cells = "".join(
-                f"<td>{'' if pd.isna(row[c]) else row[c]}</td>"
-                for c in preview.columns
-            )
-            rows_html += f"<tr>{cells}</tr>"
-        table_html = f"<table><thead><tr>{header}</tr></thead><tbody>{rows_html}</tbody></table>"
-        n_rows = len(df)
-        suffix = f" ({n_rows} rows total)" if n_rows > 5 else ""
-        return ui.div(
-            ui.div(
-                f"Data Preview - first 5 rows{suffix}",
-                style="font-weight:bold;font-size:0.85em;color:#555;margin-bottom:8px;font-family:'Segoe UI',sans-serif;",
-            ),
-            ui.HTML(table_html),
-            class_="data-preview",
-        )
-
     def _visible_msgs() -> list[AgentMessage]:
         now = time.time()
+        # list() snapshot is safe to iterate while background thread appends
         return [m for m in list(_message_log) if m.display_after <= now]
 
     def _current_states() -> dict[str, str]:
@@ -821,6 +746,17 @@ def app_server(input, output, session):
 
     def _still_running() -> bool:
         return _started and not _is_complete()
+
+    @output
+    @render.ui
+    def task_queue():
+        clock()
+        return ui.div(
+            *[
+                _task_card(a, _current_states()[a])
+                for a in ["DataCleaner", "Statistician", "Visualizer", "Reporter"]
+            ]
+        )
 
     @output
     @render.ui
@@ -850,9 +786,9 @@ def app_server(input, output, session):
     def status_text():
         clock()
         if _still_running():
-            return "Investigation in progress..."
+            return "⚡ Investigation in progress..."
         if _is_complete():
-            return "Investigation complete!"
+            return "✅ Investigation complete!"
         return ""
 
     @output
@@ -862,11 +798,31 @@ def app_server(input, output, session):
         if not _is_complete():
             return ui.div()
         report_html = markdown2.markdown(_results.get("report", ""))
+        fig_html = _results["fig"].to_html(full_html=False, include_plotlyjs="cdn")
         return ui.div(
-            ui.div("Investigation Results", class_="panel-title", style="font-size:1.1em;"),
-            ui.div(
-                ui.div("Final Report", style="font-weight:bold;margin-bottom:10px;color:#333;"),
-                ui.div(ui.HTML(report_html), class_="report-text"),
+            ui.tags.script(
+                """
+                (function() {
+                    if (window._creditsScheduled) return;
+                    window._creditsScheduled = true;
+                    setTimeout(function() {
+                        window.location.href = 'http://127.0.0.1:8002/';
+                    }, 5000);
+                })();
+                """
+            ),
+            ui.div("📊 Investigation Results", class_="panel-title", style="font-size:1.1em;"),
+            ui.layout_columns(
+                ui.div(
+                    ui.div("📝 Final Report", style="font-weight:bold;margin-bottom:10px;color:#333;"),
+                    ui.div(ui.HTML(report_html), class_="report-text"),
+                ),
+                ui.div(
+                    ui.div("📊 Chart", style="font-weight:bold;margin-bottom:10px;color:#333;"),
+                    ui.div(ui.HTML(fig_html), style="min-height:420px;"),
+                    style="display:flex;flex-direction:column;justify-content:flex-end;height:100%;",
+                ),
+                col_widths=[6, 6],
             ),
             class_="results-panel",
         )
@@ -877,29 +833,14 @@ def app_server(input, output, session):
         global _started
         if _started:
             return
-
-        # Prefer uploaded file; fall back to active_df or sample
-        f = input.csv_file()
-        if f:
-            try:
-                df = _read_csv_smart(f[0]["datapath"])
-                active_df.set(df)
-            except Exception as exc:
-                console.print(f"[red]Error reading file: {exc}[/]")
-                df = active_df() or _generate_sample_df()
-        else:
-            df = active_df()
-        if df is None:
-            df = _generate_sample_df()
-            active_df.set(df)
-
         _started = True
         interval = float(input.interval())
 
         def _run():
             try:
-                _run_investigation(df, interval)
+                _run_investigation(interval)
             except Exception:
+                import traceback
                 console.print_exception()
 
         threading.Thread(target=_run, daemon=True).start()
@@ -908,7 +849,7 @@ def app_server(input, output, session):
     @reactive.event(input.clear_btn)
     def _clear():
         _reset_state()
-        console.print("[dim]-- Page cleared, ready to run again --[/]")
+        console.print("[dim]── Page cleared, ready to run again ──[/]")
 
 
 app = App(app_ui, app_server)
@@ -916,5 +857,15 @@ app = App(app_ui, app_server)
 if __name__ == "__main__":
     import uvicorn
 
-    console.print("Starting Data Science Detective Agency on http://127.0.0.1:8000")
+    console.print(
+        Panel(
+            "[bold white]🕵️  The Data Science Detective Agency[/]\n"
+            "[dim]Lesson 01: Multi-Agent Collaboration (Real Claude API)[/]\n\n"
+            "[bright_blue]http://127.0.0.1:8000[/]  ← open in browser\n"
+            "[dim]Requires ANTHROPIC_API_KEY in your environment[/]\n"
+            "[dim]Click [bold]▶ Start Investigation[/dim] to begin",
+            title="[bold]Starting server[/]",
+            border_style="bright_blue",
+        )
+    )
     uvicorn.run(app, host="127.0.0.1", port=8000)
