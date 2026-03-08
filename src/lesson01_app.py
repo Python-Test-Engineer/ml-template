@@ -262,30 +262,160 @@ def _local_reporter(
     stds: dict[str, float],
     st_findings: str,
     vz_insight: str,
+    clean_df: pd.DataFrame,
+    n_total: int,
 ) -> str:
-    bullets = "\n".join(
-        f"- **{col}**: mean {means[col]}, std {stds.get(col, 'N/A')}" for col in means
+    # ── Extended per-column stats ──────────────────────────────────────────
+    ext: list[tuple] = []  # (col, mean, std, min, max, median, cv)
+    high_var: list[str] = []
+    for col in means:
+        vals = clean_df[col].dropna() if col in clean_df.columns else pd.Series([], dtype=float)
+        if len(vals) == 0:
+            continue
+        col_min = round(float(vals.min()), 2)
+        col_max = round(float(vals.max()), 2)
+        col_median = round(float(vals.median()), 2)
+        cv = round(stds[col] / means[col] * 100, 1) if means[col] != 0 else 0.0
+        ext.append((col, means[col], stds.get(col, 0.0), col_min, col_max, col_median, cv))
+        if cv > 40:
+            high_var.append((col, cv))
+
+    # ── Data quality breakdown ─────────────────────────────────────────────
+    quality_pct = round((1 - len(dirty_indices) / n_total) * 100, 1) if n_total > 0 else 100.0
+    issue_counts: dict[str, int] = {}
+    for r in reasons:
+        for part in r.split("; "):
+            key = (
+                "missing value" if part.startswith("missing")
+                else "anomalous value" if part.startswith("anomalous")
+                else "duplicate row" if part.startswith("duplicate")
+                else part
+            )
+            issue_counts[key] = issue_counts.get(key, 0) + 1
+    issue_lines = "\n".join(
+        f"  - {k}: **{v}** occurrence(s)" for k, v in issue_counts.items()
+    ) or "  - No issues detected"
+
+    # ── Rankings ───────────────────────────────────────────────────────────
+    ranked = sorted(means.items(), key=lambda x: x[1], reverse=True)
+    top3_lines = "\n".join(f"  {i+1}. **{c}** — avg {v}" for i, (c, v) in enumerate(ranked[:3]))
+    bottom3_lines = "\n".join(
+        f"  {i+1}. **{c}** — avg {v}" for i, (c, v) in enumerate(reversed(ranked[-3:]))
     )
-    issues = "; ".join(reasons) if reasons else "none"
+
+    # ── Stats table ────────────────────────────────────────────────────────
+    stats_rows = "\n".join(
+        f"| {col} | {m} | {s} | {mn} | {mx} | {med} | {cv}% |"
+        for col, m, s, mn, mx, med, cv in ext
+    )
+    stats_table = (
+        "| Column | Mean | Std Dev | Min | Max | Median | CV |\n"
+        "|--------|------|---------|-----|-----|--------|----|\n"
+        + stats_rows
+    ) if stats_rows else "_No numeric columns analysed._"
+
+    # ── Variability section ────────────────────────────────────────────────
+    if high_var:
+        var_lines = "\n".join(f"- **{c}** (CV: {cv}%)" for c, cv in high_var)
+        var_section = (
+            "\n## Variability Alert\n"
+            "The following columns show high coefficient of variation (CV > 40%), "
+            "indicating significant spread or potential data inconsistency:\n"
+            + var_lines
+        )
+    else:
+        var_section = ""
+
+    # ── Future work recommendations ────────────────────────────────────────
+    future_items: list[str] = []
+    if any(k == "missing value" for k in issue_counts):
+        future_items.append(
+            "**Improve upstream data capture** — missing values suggest gaps in data entry "
+            "or collection pipelines. Enforce mandatory fields at source."
+        )
+    if any(k == "anomalous value" for k in issue_counts):
+        future_items.append(
+            "**Implement range validation** — anomalous values were detected. Add min/max "
+            "constraints at the point of entry or ETL layer."
+        )
+    if any(k == "duplicate row" for k in issue_counts):
+        future_items.append(
+            "**Deduplicate at source** — duplicate rows indicate a merging or ingestion "
+            "issue. Add unique-key enforcement before loading."
+        )
+    if high_var:
+        future_items.append(
+            f"**Investigate high-variance columns** — {', '.join(c for c, _ in high_var)} "
+            "show wide spread. Segment by category or time period to understand drivers."
+        )
+    future_items += [
+        f"**Trend analysis** — extend this report with time-series breakdowns of "
+        f"**{top_column}** to identify seasonal patterns or growth trajectories.",
+        "**Correlation study** — compute pairwise correlations between numeric columns "
+        "to surface relationships that may drive the key metric.",
+        "**Automated monitoring** — schedule this pipeline to run on new data drops "
+        "and alert stakeholders when quality thresholds are breached.",
+    ]
+    future_lines = "\n".join(f"{i+1}. {item}" for i, item in enumerate(future_items))
+
+    issues_summary = "; ".join(reasons) if reasons else "none"
+
     return f"""# Case Report: Dataset Investigation
 
+## Executive Summary
+This investigation analysed **{n_total}** records across **{len(means)}** numeric column(s). \
+After removing **{len(dirty_indices)}** dirty row(s), the clean dataset contains \
+**{n_total - len(dirty_indices)}** rows ({quality_pct}% pass rate). \
+{st_findings}
+
+---
+
 ## Data Quality
-- **{len(dirty_indices)}** dirty row(s) removed.
-- Issues found: {issues}.
-- {dc_summary}
 
-## Statistical Findings
-- Overall mean: **{overall_mean}**
-- Top column: **{top_column}** (avg {means.get(top_column, '?')})
-- Per-column statistics:
-{bullets}
-- {st_findings}
+- **Total rows ingested:** {n_total}
+- **Dirty rows removed:** {len(dirty_indices)} ({round(len(dirty_indices)/n_total*100,1) if n_total else 0}%)
+- **Clean rows retained:** {n_total - len(dirty_indices)} ({quality_pct}%)
+- **Issues detected:** {issues_summary}
 
-## Conclusion
-{vz_insight} Investigate flagged rows for data entry errors or collection issues. \
-Consider **{top_column}** as the key metric for further analysis.
+### Issue Breakdown
+{issue_lines}
 
-*--- Assembled by the Data Science Detective Agency*"""
+---
+
+## Statistical Analysis
+
+### Summary Table
+{stats_table}
+
+### Top Performers (by mean)
+{top3_lines}
+
+### Lowest Performers (by mean)
+{bottom3_lines}
+
+### Overall
+- **Overall mean across all numeric columns:** {overall_mean}
+- **Highest average column:** **{top_column}** at {means.get(top_column, '?')}
+{var_section}
+
+---
+
+## Key Findings
+
+- {vz_insight}
+- Data quality stands at **{quality_pct}%** after cleaning.
+- **{top_column}** consistently leads as the strongest numeric signal in this dataset.
+{"- High variability detected in: " + ", ".join(f"**{c}**" for c, _ in high_var) + " — warrants deeper investigation." if high_var else "- No alarming variability patterns detected across columns."}
+
+---
+
+## Recommended Next Steps
+
+{future_lines}
+
+---
+
+*— Assembled by the Data Science Detective Agency*"""
 
 
 # ---------------------------------------------------------------------------
@@ -447,6 +577,8 @@ def _run_investigation(df: pd.DataFrame, interval: float = 1.0) -> None:
         stds=stds,
         st_findings=st.findings,
         vz_insight=vz.insight,
+        clean_df=clean_df,
+        n_total=len(df),
     )
     _results["report"] = report_text
 
@@ -571,16 +703,16 @@ app_ui = ui.page_fluid(
     ),
     ui.tags.style(
         """
-        body { background: #F0F2F5; font-family: 'Segoe UI', sans-serif; }
+        body { background: antiquewhite; font-family: 'Segoe UI', sans-serif; }
         .recalculating { opacity: 1 !important; }
         .shiny-busy-indicator { display: none !important; }
         .header-bar {
             background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
-            color: white; padding: 20px 30px; margin-bottom: 24px;
+            color: white; padding: 24px 30px; margin-bottom: 24px;
             border-radius: 0 0 16px 16px;
+            text-align: center;
         }
-        .header-bar h2 { margin: 0; font-size: 1.5em; }
-        .header-bar p  { margin: 6px 0 0; opacity: 0.75; font-size: 0.9em; }
+        .header-bar h2 { margin: 0; font-size: 1.6em; }
         .panel-title {
             font-weight: bold; font-size: 0.95em; color: #333;
             text-transform: uppercase; letter-spacing: 0.05em;
@@ -588,19 +720,19 @@ app_ui = ui.page_fluid(
             border-bottom: 2px solid #E0E0E0;
         }
         .upload-zone {
-            background: white; border: 2px dashed #C0C0C0; border-radius: 12px;
+            background: #FDF8F0; border: 2px dashed #C8B89A; border-radius: 12px;
             padding: 16px 20px; margin: 0 16px 16px;
             display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
         }
         .upload-zone .shiny-input-container { margin-bottom: 0 !important; }
         .data-preview {
-            background: white; border-radius: 10px; border: 1px solid #E0E0E0;
+            background: #FDF8F0; border-radius: 10px; border: 1px solid #DDD0B3;
             padding: 12px 16px; margin: 0 16px 16px; font-size: 0.82em;
             font-family: monospace; overflow-x: auto;
         }
         .data-preview table { border-collapse: collapse; width: 100%; }
         .data-preview th {
-            background: #F0F2F5; padding: 4px 10px;
+            background: #EDE3D0; padding: 4px 10px;
             border: 1px solid #E0E0E0; text-align: left; font-size: 0.9em;
         }
         .data-preview td {
@@ -614,7 +746,7 @@ app_ui = ui.page_fluid(
             border: 1px solid #E0E0E0; padding: 20px; margin-top: 20px;
         }
         .report-text {
-            background: #F8F9FA; border-radius: 8px; padding: 16px;
+            background: #FDF8F0; border-radius: 8px; padding: 16px;
             font-family: 'Segoe UI', sans-serif; font-size: 0.88em;
             border: 1px solid #E0E0E0; line-height: 1.7;
         }
@@ -624,6 +756,10 @@ app_ui = ui.page_fluid(
         .report-text ul { margin: 4px 0 8px 18px; padding: 0; }
         .report-text li { margin-bottom: 2px; }
         .report-text strong { color: #1A1A2E; }
+        .report-text table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 0.9em; }
+        .report-text th { background: #EDE3D0; padding: 5px 10px; border: 1px solid #C8B89A; text-align: left; }
+        .report-text td { padding: 4px 10px; border: 1px solid #DDD0B3; }
+        .report-text tr:nth-child(even) td { background: #F5EFE3; }
         .start-btn {
             background: #27AE60 !important; color: white !important;
             font-weight: bold !important; font-size: 1.1em !important;
@@ -640,13 +776,72 @@ app_ui = ui.page_fluid(
             margin-bottom: 0 !important;
             margin-left: 10px !important;
         }
+        /* ── Agent intro modal ──────────────────────────────────── */
+        #agent-intro-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(10,10,20,0.82);
+            display: flex; align-items: center; justify-content: center;
+            animation: fadeInOverlay 0.4s ease;
+        }
+        @keyframes fadeInOverlay { from { opacity:0; } to { opacity:1; } }
+        #agent-intro-overlay.fade-out {
+            animation: fadeOutOverlay 0.5s ease forwards;
+            pointer-events: none;
+        }
+        @keyframes fadeOutOverlay { from { opacity:1; } to { opacity:0; } }
+        #agent-intro-card {
+            background: white; border-radius: 24px;
+            width: 600px; max-width: 94vw;
+            padding: 54px 48px 36px;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+            text-align: center; position: relative;
+            animation: introSlideUp 0.35s ease;
+        }
+        @keyframes introSlideUp {
+            from { transform: translateY(30px); opacity:0; }
+            to   { transform: translateY(0);    opacity:1; }
+        }
+        .intro-skip {
+            position: absolute; top: 18px; right: 24px;
+            color: #aaa; font-size: 1.0em; cursor: pointer;
+            text-decoration: underline; background: none; border: none; padding: 0;
+        }
+        .intro-skip:hover { color: #555; }
+        .intro-icon { font-size: 5.1em; margin-bottom: 14px; display: block; }
+        .intro-agent-name {
+            font-size: 2.0em; font-weight: bold; margin-bottom: 8px;
+        }
+        .intro-badge {
+            display: inline-block; font-size: 1.0em; font-weight: bold;
+            color: white; padding: 4px 16px; border-radius: 20px;
+            margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        .intro-desc {
+            font-size: 1.15em; color: #555; line-height: 1.6;
+            margin-bottom: 32px; min-height: 78px;
+        }
+        .intro-dots {
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 24px;
+        }
+        .intro-dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            background: #ddd; transition: background 0.3s;
+        }
+        .intro-next-btn {
+            padding: 13px 42px; border-radius: 10px; border: none;
+            font-size: 1.25em; font-weight: bold; cursor: pointer;
+            color: white; transition: opacity 0.2s;
+        }
+        .intro-next-btn:hover { opacity: 0.85; }
+        .intro-progress-wrap {
+            height: 4px; background: #eee; border-radius: 2px;
+            margin-top: 24px; overflow: hidden;
+        }
+        .intro-progress-bar { height: 100%; width: 0%; border-radius: 2px; }
     """
     ),
     ui.div(
         ui.tags.h2("The Data Science Detective Agency"),
-        ui.tags.p(
-            "Lesson 01: Multi-Agent Collaboration — Upload any CSV and let local agents investigate it"
-        ),
         class_="header-bar",
     ),
     # Upload zone
@@ -661,17 +856,6 @@ app_ui = ui.page_fluid(
                 width="340px",
             ),
             style="flex:1;",
-        ),
-        ui.div(
-            ui.tags.span("— or —", style="color:#aaa;font-size:0.9em;margin-right:10px;"),
-            ui.input_action_button(
-                "use_sample_btn",
-                "Use sample grades data",
-                style=(
-                    "background:#4A90D9;color:white;border:none;"
-                    "border-radius:6px;padding:6px 14px;cursor:pointer;font-size:0.9em;"
-                ),
-            ),
         ),
         ui.output_ui("file_info"),
         class_="upload-zone",
@@ -719,16 +903,111 @@ app_ui = ui.page_fluid(
                 })();
             """
             ),
-            style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;",
+            style="background:#FAF5EB;border-radius:12px;padding:16px;border:1px solid #DDD0B3;",
         ),
         ui.div(
             ui.div("Agent Status", class_="panel-title"),
             ui.output_ui("agent_cards"),
-            style="background:#F8F9FA;border-radius:12px;padding:16px;border:1px solid #E0E0E0;",
+            style="background:#FAF5EB;border-radius:12px;padding:16px;border:1px solid #DDD0B3;",
         ),
         col_widths=[9, 3],
     ),
     ui.output_ui("results_panel"),
+    ui.tags.script(
+        """
+        (function() {
+            var AGENTS = [
+                { name: "Manager",      role: "Orchestrator",    icon: "🕵️",  color: "#4A90D9",
+                  desc: "Runs the show — loads your data, briefs the team, and coordinates every agent in sequence." },
+                { name: "DataCleaner",  role: "Quality Guard",   icon: "🧹",  color: "#E67E22",
+                  desc: "Scans every row for missing values, statistical outliers (3σ), and exact duplicates." },
+                { name: "Statistician", role: "Number Cruncher", icon: "📊",  color: "#27AE60",
+                  desc: "Computes mean and standard deviation for each numeric column on the cleaned dataset." },
+                { name: "Visualizer",   role: "Chart Builder",   icon: "📈",  color: "#8E44AD",
+                  desc: "Designs a colour-coded bar chart and writes a one-sentence visual insight." },
+                { name: "Reporter",     role: "Case Writer",     icon: "📝",  color: "#C0392B",
+                  desc: "Pulls all findings together into a structured Markdown investigation report." },
+            ];
+
+            var DURATION = 3000;
+            var current = 0;
+            var timer = null;
+            var rafId = null;
+            var startTime = null;
+
+            var overlay  = document.createElement('div');  overlay.id = 'agent-intro-overlay';
+            var card     = document.createElement('div');  card.id = 'agent-intro-card';
+            var skipBtn  = document.createElement('button'); skipBtn.className = 'intro-skip'; skipBtn.textContent = 'Skip intro';
+            var iconEl   = document.createElement('span');  iconEl.className = 'intro-icon';
+            var nameEl   = document.createElement('div');   nameEl.className = 'intro-agent-name';
+            var badgeEl  = document.createElement('span');  badgeEl.className = 'intro-badge';
+            var descEl   = document.createElement('div');   descEl.className = 'intro-desc';
+            var dotsEl   = document.createElement('div');   dotsEl.className = 'intro-dots';
+            var nextBtn  = document.createElement('button'); nextBtn.className = 'intro-next-btn';
+            var progWrap = document.createElement('div');   progWrap.className = 'intro-progress-wrap';
+            var progBar  = document.createElement('div');   progBar.className = 'intro-progress-bar';
+
+            AGENTS.forEach(function(_, i) {
+                var d = document.createElement('div');
+                d.className = 'intro-dot' + (i === 0 ? ' active' : '');
+                dotsEl.appendChild(d);
+            });
+
+            progWrap.appendChild(progBar);
+            card.append(skipBtn, iconEl, nameEl, badgeEl, descEl, dotsEl, nextBtn, progWrap);
+            overlay.appendChild(card);
+
+            skipBtn.addEventListener('click', dismiss);
+            nextBtn.addEventListener('click', advance);
+
+            function showSlide(i) {
+                var a = AGENTS[i];
+                iconEl.textContent  = a.icon;
+                nameEl.textContent  = a.name;  nameEl.style.color = a.color;
+                badgeEl.textContent = a.role;  badgeEl.style.background = a.color;
+                descEl.textContent  = a.desc;
+                nextBtn.textContent = (i === AGENTS.length - 1) ? 'All set! →' : 'Next →';
+                nextBtn.style.background = a.color;
+                progBar.style.background = a.color;
+
+                dotsEl.querySelectorAll('.intro-dot').forEach(function(d, idx) {
+                    d.style.background = idx === i ? a.color : '#ddd';
+                });
+
+                clearTimeout(timer);
+                cancelAnimationFrame(rafId);
+                progBar.style.transition = 'none';
+                progBar.style.width = '0%';
+                startTime = performance.now();
+
+                function tick(now) {
+                    var pct = Math.min(((now - startTime) / DURATION) * 100, 100);
+                    progBar.style.width = pct + '%';
+                    if (pct < 100) { rafId = requestAnimationFrame(tick); }
+                }
+                rafId = requestAnimationFrame(tick);
+                timer = setTimeout(advance, DURATION);
+            }
+
+            function advance() {
+                clearTimeout(timer); cancelAnimationFrame(rafId);
+                current++;
+                if (current >= AGENTS.length) { dismiss(); } else { showSlide(current); }
+            }
+
+            function dismiss() {
+                clearTimeout(timer); cancelAnimationFrame(rafId);
+                overlay.classList.add('fade-out');
+                setTimeout(function() { overlay.remove(); }, 500);
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.appendChild(overlay);
+                showSlide(0);
+            });
+        })();
+        """
+    ),
     style="max-width:1400px;margin:0 auto;padding:0 16px 40px;",
 )
 
@@ -755,11 +1034,6 @@ def app_server(input, output, session):
             active_df.set(df)
         except Exception as exc:
             console.print(f"[red]Error reading uploaded file: {exc}[/]")
-
-    @reactive.effect
-    @reactive.event(input.use_sample_btn)
-    def _on_sample():
-        active_df.set(_generate_sample_df())
 
     @output
     @render.ui
@@ -861,7 +1135,7 @@ def app_server(input, output, session):
         clock()
         if not _is_complete():
             return ui.div()
-        report_html = markdown2.markdown(_results.get("report", ""))
+        report_html = markdown2.markdown(_results.get("report", ""), extras=["tables", "fenced-code-blocks"])
         return ui.div(
             ui.div("Investigation Results", class_="panel-title", style="font-size:1.1em;"),
             ui.div(
