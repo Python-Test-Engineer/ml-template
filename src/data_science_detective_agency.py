@@ -719,9 +719,9 @@ def _message_bubble(msg: AgentMessage) -> ui.Tag:
             ui.tags.span(f"  {ts}", style="color:#aaa;font-size:0.75em;float:right;"),
             style="margin-bottom:4px;",
         ),
-        ui.div(msg.content, style="color:#333;font-size:0.9em;line-height:1.4;"),
+        ui.div(msg.content, style="color:var(--text);font-size:0.9em;line-height:1.4;"),
         style=(
-            f"background:white;border-left:4px solid {color};"
+            f"background:var(--bubble-bg);border-left:4px solid {color};"
             "border-radius:8px;padding:10px 14px;margin-bottom:8px;"
             "box-shadow:0 1px 3px rgba(0,0,0,0.07);"
         ),
@@ -748,7 +748,7 @@ def _agent_status_card(agent: str, status: str) -> ui.Tag:
         ),
         _badge(status),
         style=(
-            "background:white;border:1px solid #E0E0E0;border-radius:10px;"
+            "background:var(--card-bg);border:1px solid var(--border-light);border-radius:10px;"
             f"padding:8px 12px;margin-bottom:8px;border-left:4px solid {color};"
         ),
     )
@@ -788,63 +788,127 @@ app_ui = ui.page_fluid(
     ),
     ui.tags.style(
         """
-        body { background: antiquewhite; font-family: 'Segoe UI', sans-serif; }
+        :root {
+            --bg:              antiquewhite;
+            --surface:         #FDF8F0;
+            --surface-alt:     #FAF5EB;
+            --border:          #DDD0B3;
+            --border-light:    #E0E0E0;
+            --text:            #333;
+            --text-muted:      #777;
+            --text-faint:      #aaa;
+            --panel-title:     #333;
+            --panel-border:    #E0E0E0;
+            --bubble-bg:       #ffffff;
+            --card-bg:         #ffffff;
+            --results-bg:      #ffffff;
+            --preview-th:      #EDE3D0;
+            --preview-td-bdr:  #F0F0F0;
+            --report-bg:       #FDF8F0;
+            --report-th:       #EDE3D0;
+            --report-th-bdr:   #C8B89A;
+            --report-td-bdr:   #DDD0B3;
+            --report-td-alt:   #F5EFE3;
+            --report-h1:       #1A1A2E;
+            --report-h2:       #333;
+            --report-strong:   #1A1A2E;
+            --upload-bg:       #FDF8F0;
+            --upload-border:   #C8B89A;
+            --msg-wait:        #aaa;
+        }
+        body.dark {
+            --bg:              #111827;
+            --surface:         #1A2235;
+            --surface-alt:     #1E2840;
+            --border:          #2E4070;
+            --border-light:    #2E4070;
+            --text:            #D8DCE8;
+            --text-muted:      #8A90A8;
+            --text-faint:      #555E78;
+            --panel-title:     #B8C4E0;
+            --panel-border:    #2E4070;
+            --bubble-bg:       #1E2840;
+            --card-bg:         #1E2840;
+            --results-bg:      #1A2235;
+            --preview-th:      #1C3060;
+            --preview-td-bdr:  #2A3A5C;
+            --report-bg:       #1A2235;
+            --report-th:       #1C3060;
+            --report-th-bdr:   #2A4080;
+            --report-td-bdr:   #2A3A5C;
+            --report-td-alt:   #1C2840;
+            --report-h1:       #82B4F0;
+            --report-h2:       #B8C4E0;
+            --report-strong:   #82B4F0;
+            --upload-bg:       #1A2235;
+            --upload-border:   #2E4070;
+            --msg-wait:        #556;
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; transition: background 0.3s, color 0.3s; }
         .recalculating { opacity: 1 !important; }
         .shiny-busy-indicator { display: none !important; }
         .header-bar {
             background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
-            color: white; padding: 24px 30px; margin-bottom: 24px;
+            color: white; padding: 0 30px; margin-bottom: 24px;
             border-radius: 0 0 16px 16px;
-            text-align: center;
+            display: flex; align-items: center; min-height: 72px;
         }
-        .header-bar h2 { margin: 0; font-size: 1.6em; }
+        .header-bar h2 { margin: 0; font-size: 1.6em; flex: 1; text-align: center; }
+        #theme-toggle {
+            background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 50%; width: 40px; height: 40px; cursor: pointer;
+            font-size: 1.25em; display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s; flex-shrink: 0; color: white;
+        }
+        #theme-toggle:hover { background: rgba(255,255,255,0.22); }
         .panel-title {
-            font-weight: bold; font-size: 0.95em; color: #333;
+            font-weight: bold; font-size: 0.95em; color: var(--panel-title);
             text-transform: uppercase; letter-spacing: 0.05em;
             padding-bottom: 8px; margin-bottom: 14px;
-            border-bottom: 2px solid #E0E0E0;
+            border-bottom: 2px solid var(--panel-border);
         }
         .upload-zone {
-            background: #FDF8F0; border: 2px dashed #C8B89A; border-radius: 12px;
+            background: var(--upload-bg); border: 2px dashed var(--upload-border); border-radius: 12px;
             padding: 16px 20px; margin: 0 16px 16px;
             display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
         }
         .upload-zone .shiny-input-container { margin-bottom: 0 !important; }
+        .upload-zone label { color: var(--text) !important; }
         .data-preview {
-            background: #FDF8F0; border-radius: 10px; border: 1px solid #DDD0B3;
+            background: var(--surface); border-radius: 10px; border: 1px solid var(--border);
             padding: 12px 16px; margin: 0 16px 16px; font-size: 0.82em;
-            font-family: monospace; overflow-x: auto;
+            font-family: monospace; overflow-x: auto; color: var(--text);
         }
         .data-preview table { border-collapse: collapse; width: 100%; }
         .data-preview th {
-            background: #EDE3D0; padding: 4px 10px;
-            border: 1px solid #E0E0E0; text-align: left; font-size: 0.9em;
+            background: var(--preview-th); padding: 4px 10px;
+            border: 1px solid var(--border); text-align: left; font-size: 0.9em;
         }
         .data-preview td {
-            padding: 3px 10px; border: 1px solid #F0F0F0;
+            padding: 3px 10px; border: 1px solid var(--preview-td-bdr);
             white-space: nowrap; max-width: 160px; overflow: hidden;
             text-overflow: ellipsis;
         }
         .msg-log { height: 420px; overflow-y: auto; padding: 4px 0; }
         .results-panel {
-            background: white; border-radius: 12px;
-            border: 1px solid #E0E0E0; padding: 20px; margin-top: 20px;
+            background: var(--results-bg); border-radius: 12px;
+            border: 1px solid var(--border-light); padding: 20px; margin-top: 20px;
         }
         .report-text {
-            background: #FDF8F0; border-radius: 8px; padding: 16px;
+            background: var(--report-bg); border-radius: 8px; padding: 16px;
             font-family: 'Segoe UI', sans-serif; font-size: 0.88em;
-            border: 1px solid #E0E0E0; line-height: 1.7;
+            border: 1px solid var(--border-light); line-height: 1.7; color: var(--text);
         }
-        .report-text h1 { font-size: 1.2em; margin: 0 0 10px; color: #1A1A2E; }
-        .report-text h2 { font-size: 1.0em; margin: 14px 0 6px; color: #333;
-                          border-bottom: 1px solid #ddd; padding-bottom: 3px; }
+        .report-text h1 { font-size: 1.2em; margin: 0 0 10px; color: var(--report-h1); }
+        .report-text h2 { font-size: 1.0em; margin: 14px 0 6px; color: var(--report-h2);
+                          border-bottom: 1px solid var(--border); padding-bottom: 3px; }
         .report-text ul { margin: 4px 0 8px 18px; padding: 0; }
         .report-text li { margin-bottom: 2px; }
-        .report-text strong { color: #1A1A2E; }
+        .report-text strong { color: var(--report-strong); }
         .report-text table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 0.9em; }
-        .report-text th { background: #EDE3D0; padding: 5px 10px; border: 1px solid #C8B89A; text-align: left; }
-        .report-text td { padding: 4px 10px; border: 1px solid #DDD0B3; }
-        .report-text tr:nth-child(even) td { background: #F5EFE3; }
+        .report-text th { background: var(--report-th); padding: 5px 10px; border: 1px solid var(--report-th-bdr); text-align: left; }
+        .report-text td { padding: 4px 10px; border: 1px solid var(--report-td-bdr); }
+        .report-text tr:nth-child(even) td { background: var(--report-td-alt); }
         .start-btn {
             background: #27AE60 !important; color: white !important;
             font-weight: bold !important; font-size: 1.1em !important;
@@ -861,6 +925,7 @@ app_ui = ui.page_fluid(
             margin-bottom: 0 !important;
             margin-left: 10px !important;
         }
+        .toolbar-row select { background: var(--surface); color: var(--text); border-color: var(--border); }
         /* ── Agent intro modal ──────────────────────────────────── */
         #agent-intro-overlay {
             position: fixed; inset: 0; z-index: 9999;
@@ -931,8 +996,35 @@ app_ui = ui.page_fluid(
     ),
     ui.div(
         ui.tags.h2("The Data Science Detective Agency"),
+        ui.tags.button("🌙", id="theme-toggle", title="Toggle light/dark mode"),
         class_="header-bar",
     ),
+    ui.tags.script("""
+(function() {
+    function apply(dark) {
+        document.body.classList.toggle('dark', dark);
+        var btn = document.getElementById('theme-toggle');
+        if (btn) btn.textContent = dark ? '\u2600\ufe0f' : '\U0001F319';
+        localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+    var saved = localStorage.getItem('theme') === 'dark';
+    // Run after DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            apply(saved);
+            document.getElementById('theme-toggle').addEventListener('click', function() {
+                apply(!document.body.classList.contains('dark'));
+            });
+        });
+    } else {
+        apply(saved);
+        var btn = document.getElementById('theme-toggle');
+        if (btn) btn.addEventListener('click', function() {
+            apply(!document.body.classList.contains('dark'));
+        });
+    }
+})();
+    """),
     # Upload zone
     ui.div(
         ui.div(
@@ -1263,7 +1355,7 @@ def app_server(input, output, session):
                 ),
                 ui.div(
                     "Final Report",
-                    style="font-weight:bold;margin-bottom:10px;color:#333;",
+                    style="font-weight:bold;margin-bottom:10px;color:var(--text);",
                 ),
                 ui.div(ui.HTML(report_html), class_="report-text"),
                 style="clear:both;",
