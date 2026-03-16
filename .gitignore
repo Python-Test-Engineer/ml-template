@@ -15,7 +15,7 @@ wheels/
 # data (too large and may contain patient data)
 data/
 
-# local Claude Code permissions — each user maintains their own
+# local Claude Code permissions — each user maintains their own - created by claude code
 .claude/settings.local.json
 
 # tests

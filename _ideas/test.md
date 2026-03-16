@@ -1,1 +1,0 @@
-I want to analyse a sales CSV with SHiny in python
