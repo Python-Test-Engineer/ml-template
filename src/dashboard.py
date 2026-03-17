@@ -7,7 +7,8 @@ from pathlib import Path
 import base64
 
 import pandas as pd
-from shiny import App, ui, render, reactive
+import shinyswatch
+from shiny import App, ui, render
 from shinywidgets import output_widget, render_widget
 import plotly.express as px
 
@@ -19,11 +20,9 @@ if not _candidates:
 
 OUTPUT_DIR   = _candidates[-1]
 PROJECT_NAME = OUTPUT_DIR.name
-PORT         = 8001
+PORT         = 8003
 
-DARKLY_CSS = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/darkly/bootstrap.min.css"
-FLATLY_CSS = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/flatly/bootstrap.min.css"
-BI_CSS     = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+BI_CSS = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
@@ -35,8 +34,8 @@ dirty_df   = pd.read_csv(dirty_path) if dirty_path.exists() else None
 stats_path = OUTPUT_DIR / "summary_stats.csv"
 stats_df   = pd.read_csv(stats_path) if stats_path.exists() else None
 
-plot_dir   = OUTPUT_DIR / "plots"
-png_files  = sorted(plot_dir.glob("*.png")) if plot_dir.exists() else []
+plot_dir  = OUTPUT_DIR / "plots"
+png_files = sorted(plot_dir.glob("*.png")) if plot_dir.exists() else []
 
 report_path = OUTPUT_DIR / "report.html"
 report_html = report_path.read_text(encoding="utf-8") if report_path.exists() else None
@@ -66,7 +65,7 @@ def stat_val(metric_contains: str) -> str:
     return str(row["value"].iloc[0]) if not row.empty else "N/A"
 
 
-# ── Tab content (static UI built at import time) ──────────────────────────────
+# ── Tab content ───────────────────────────────────────────────────────────────
 
 def _overview_ui():
     total    = stat_val("Total appointments")
@@ -75,10 +74,10 @@ def _overview_ui():
     dirty_n  = str(len(dirty_df)) if dirty_df is not None else "0"
 
     kpis = ui.row(
-        ui.column(3, kpi_card("Total Appointments",  total,    "bi-calendar-check-fill", "primary")),
-        ui.column(3, kpi_card("Unique Patients",      patients, "bi-people-fill",          "info")),
-        ui.column(3, kpi_card("Overall No-Show Rate", f"{noshow}%", "bi-x-circle-fill",   "warning")),
-        ui.column(3, kpi_card("Dirty Rows Removed",   dirty_n,  "bi-trash-fill",           "danger")),
+        ui.column(3, kpi_card("Total Appointments",  total,         "bi-calendar-check-fill", "primary")),
+        ui.column(3, kpi_card("Unique Patients",      patients,      "bi-people-fill",          "info")),
+        ui.column(3, kpi_card("Overall No-Show Rate", f"{noshow}%",  "bi-x-circle-fill",        "warning")),
+        ui.column(3, kpi_card("Dirty Rows Removed",   dirty_n,       "bi-trash-fill",           "danger")),
     )
 
     report_section = ui.div()
@@ -122,7 +121,7 @@ def _gallery_ui():
                     ui.div(
                         ui.tags.img(
                             src=encode_png(p),
-                            style="width:100%; border-radius:5px; box-shadow:0 2px 6px rgba(0,0,0,0.4);",
+                            style="width:100%; border-radius:5px; box-shadow:0 2px 6px rgba(0,0,0,0.15);",
                             title=p.stem,
                         ),
                         ui.p(
@@ -218,77 +217,28 @@ _nav_panels.append(ui.nav_panel("Data Explorer", _explorer_ui()))
 # ── App UI ────────────────────────────────────────────────────────────────────
 
 app_ui = ui.page_navbar(
-    # Static head: Bootstrap Icons font
     ui.head_content(
         ui.tags.link(rel="stylesheet", href=BI_CSS),
     ),
-
-    # Nav panels
     *_nav_panels,
-
-    # Dark / Light toggle — icon lives INSIDE the button so clicks always register
-    ui.nav_control(
-        ui.input_action_button(
-            "toggle_theme",
-            ui.output_ui("toggle_icon", inline=True),   # icon IS the button label
-            class_="btn btn-sm",
-            style=(
-                "border:none; background:transparent; "
-                "cursor:pointer; padding:0.3rem 0.6rem; margin-right:0.25rem;"
-            ),
-        )
-    ),
-
-    # Brand / title
     title=ui.span(
         ui.tags.i(class_="bi bi-activity me-2", style="color:#0dcaf0;"),
         f"{PROJECT_NAME} — Data Intelligence",
     ),
     id="navbar",
-    inverse=True,
-
-    # Dynamic theme link injected above all tab content (persists across tab switches)
-    header=ui.output_ui("theme_link"),
+    theme=shinyswatch.theme.flatly(),
 )
 
 
 # ── Server ────────────────────────────────────────────────────────────────────
 
 def server(input, output, session):
-    theme_dark = reactive.Value(True)  # start in dark mode
-
-    # ── Theme toggle ──────────────────────────────────────────────────────────
-    @reactive.effect
-    @reactive.event(input.toggle_theme)
-    def _flip_theme():
-        theme_dark.set(not theme_dark.get())
-
-    @render.ui
-    def theme_link():
-        href = DARKLY_CSS if theme_dark.get() else FLATLY_CSS
-        return ui.tags.link(rel="stylesheet", href=href)
-
-    @render.ui
-    def toggle_icon():
-        if theme_dark.get():
-            return ui.tags.i(
-                class_="bi bi-sun-fill",
-                style="font-size:1.25rem; color:#ffc107;",
-                title="Switch to light mode",
-            )
-        else:
-            return ui.tags.i(
-                class_="bi bi-moon-fill",
-                style="font-size:1.25rem; color:#6c757d;",
-                title="Switch to dark mode",
-            )
 
     # ── Statistics charts ─────────────────────────────────────────────────────
     if stats_df is not None:
 
         @render_widget
         def noshow_chart():
-            tpl = "plotly_dark" if theme_dark.get() else "plotly_white"
             labels = ["Female", "Male", "No SMS", "SMS Received"]
             keys   = ["Gender F", "Gender M", "No SMS", "SMS received"]
             vals   = []
@@ -299,7 +249,7 @@ def server(input, output, session):
                 x=labels, y=vals,
                 labels={"x": "Category", "y": "No-Show Rate (%)"},
                 title="No-Show Rate by Category",
-                template=tpl,
+                template="plotly_white",
                 color=vals,
                 color_continuous_scale="RdYlGn_r",
             )
@@ -308,7 +258,6 @@ def server(input, output, session):
 
         @render_widget
         def lead_chart():
-            tpl     = "plotly_dark" if theme_dark.get() else "plotly_white"
             buckets = ["same-day", "1-7d", "8-30d", "31-90d", "90d+"]
             vals    = []
             for b in buckets:
@@ -318,7 +267,7 @@ def server(input, output, session):
                 x=buckets, y=vals,
                 labels={"x": "Lead Bucket", "y": "No-Show Rate (%)"},
                 title="No-Show Rate by Lead Days",
-                template=tpl,
+                template="plotly_white",
                 color=vals,
                 color_continuous_scale="RdYlGn_r",
             )
@@ -334,13 +283,12 @@ def server(input, output, session):
 
         @render_widget
         def dirty_chart():
-            tpl    = "plotly_dark" if theme_dark.get() else "plotly_white"
             counts = dirty_df["reason"].value_counts().reset_index()
             counts.columns = ["reason", "count"]
             fig = px.bar(
                 counts, x="reason", y="count",
                 title="Dirty Rows Removed by Reason",
-                template=tpl,
+                template="plotly_white",
                 color="count",
                 color_continuous_scale="Reds",
             )
@@ -370,6 +318,5 @@ app = App(app_ui, server)
 if __name__ == "__main__":
     import uvicorn
     print(f"\n  Dashboard: http://127.0.0.1:{PORT}")
-    print(f"  Project  : {PROJECT_NAME}")
-    print(f"  Toggle dark/light mode with the icon in the top-right navbar.\n")
+    print(f"  Project  : {PROJECT_NAME}\n")
     uvicorn.run(app, host="127.0.0.1", port=PORT)
