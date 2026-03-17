@@ -1,0 +1,379 @@
+"""
+Data Intelligence Dashboard — Shiny for Python
+Auto-discovers the highest PROJECT_XX output folder.
+"""
+
+from pathlib import Path
+import base64
+
+import pandas as pd
+from shiny import App, ui, render, reactive
+from shinywidgets import output_widget, render_widget
+import plotly.express as px
+
+# ── Constants ─────────────────────────────────────────────────────────────────
+
+_candidates = sorted(Path("output").glob("PROJECT_*"))
+if not _candidates:
+    raise RuntimeError("No output/PROJECT_* folders found.")
+
+OUTPUT_DIR   = _candidates[-1]
+PROJECT_NAME = OUTPUT_DIR.name
+PORT         = 8000
+
+DARKLY_CSS = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/darkly/bootstrap.min.css"
+FLATLY_CSS = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/flatly/bootstrap.min.css"
+BI_CSS     = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+
+# ── Load data ─────────────────────────────────────────────────────────────────
+
+clean_df = pd.read_csv(OUTPUT_DIR / "clean.csv")
+
+dirty_path = OUTPUT_DIR / "dirty.csv"
+dirty_df   = pd.read_csv(dirty_path) if dirty_path.exists() else None
+
+stats_path = OUTPUT_DIR / "summary_stats.csv"
+stats_df   = pd.read_csv(stats_path) if stats_path.exists() else None
+
+plot_dir   = OUTPUT_DIR / "plots"
+png_files  = sorted(plot_dir.glob("*.png")) if plot_dir.exists() else []
+
+report_path = OUTPUT_DIR / "report.html"
+report_html = report_path.read_text(encoding="utf-8") if report_path.exists() else None
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def encode_png(path: Path) -> str:
+    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
+
+
+def kpi_card(title: str, value: str, icon: str = "bi-bar-chart-fill", color: str = "primary"):
+    return ui.div(
+        ui.div(
+            ui.tags.i(class_=f"bi {icon}", style="font-size:2rem;"),
+            ui.h2(value, class_="mt-1 mb-0 fw-bold"),
+            ui.p(title, class_="text-muted mb-0 small"),
+            class_="card-body text-center py-3",
+        ),
+        class_=f"card border-{color} mb-3 shadow-sm h-100",
+    )
+
+
+def stat_val(metric_contains: str) -> str:
+    if stats_df is None:
+        return "N/A"
+    row = stats_df[stats_df["metric"].str.contains(metric_contains, na=False)]
+    return str(row["value"].iloc[0]) if not row.empty else "N/A"
+
+
+# ── Tab content (static UI built at import time) ──────────────────────────────
+
+def _overview_ui():
+    total    = stat_val("Total appointments")
+    patients = stat_val("Total unique patients")
+    noshow   = stat_val("Overall no-show rate")
+    dirty_n  = str(len(dirty_df)) if dirty_df is not None else "0"
+
+    kpis = ui.row(
+        ui.column(3, kpi_card("Total Appointments",  total,    "bi-calendar-check-fill", "primary")),
+        ui.column(3, kpi_card("Unique Patients",      patients, "bi-people-fill",          "info")),
+        ui.column(3, kpi_card("Overall No-Show Rate", f"{noshow}%", "bi-x-circle-fill",   "warning")),
+        ui.column(3, kpi_card("Dirty Rows Removed",   dirty_n,  "bi-trash-fill",           "danger")),
+    )
+
+    report_section = ui.div()
+    if report_html:
+        report_section = ui.div(
+            ui.h4("Full Report", class_="mt-4 mb-3"),
+            ui.div(
+                ui.HTML(report_html),
+                style=(
+                    "max-height:720px; overflow-y:auto; "
+                    "border:1px solid rgba(128,128,128,0.3); "
+                    "border-radius:6px; padding:1.25rem;"
+                ),
+            ),
+        )
+
+    return ui.div(
+        ui.h3(
+            ui.tags.i(class_="bi bi-speedometer2 me-2"),
+            f"{PROJECT_NAME} — Overview",
+            class_="mb-4 mt-3",
+        ),
+        kpis,
+        report_section,
+        class_="container-fluid px-4",
+    )
+
+
+def _gallery_ui():
+    if not png_files:
+        return ui.p("No chart images found.", class_="text-muted p-4")
+
+    rows = []
+    for i in range(0, len(png_files), 3):
+        chunk = png_files[i : i + 3]
+        cols = []
+        for p in chunk:
+            cols.append(
+                ui.column(
+                    4,
+                    ui.div(
+                        ui.tags.img(
+                            src=encode_png(p),
+                            style="width:100%; border-radius:5px; box-shadow:0 2px 6px rgba(0,0,0,0.4);",
+                            title=p.stem,
+                        ),
+                        ui.p(
+                            p.stem.replace("_", " ").title(),
+                            class_="text-center small mt-2 text-muted",
+                        ),
+                        class_="mb-4",
+                    ),
+                )
+            )
+        rows.append(ui.row(*cols))
+
+    return ui.div(
+        ui.h3(
+            ui.tags.i(class_="bi bi-images me-2"),
+            "Charts Gallery",
+            class_="mb-2 mt-3",
+        ),
+        ui.p(f"{len(png_files)} charts generated by the analysis pipeline.", class_="text-muted mb-4"),
+        *rows,
+        class_="container-fluid px-4",
+    )
+
+
+def _statistics_ui():
+    if stats_df is None:
+        return ui.p("No summary_stats.csv found.", class_="text-muted p-4")
+
+    return ui.div(
+        ui.h3(
+            ui.tags.i(class_="bi bi-graph-up me-2"),
+            "Summary Statistics",
+            class_="mb-4 mt-3",
+        ),
+        ui.row(
+            ui.column(6, ui.h5("No-Show Rate by Category"), output_widget("noshow_chart")),
+            ui.column(6, ui.h5("No-Show Rate by Lead Days"),  output_widget("lead_chart")),
+        ),
+        ui.h5("Full Statistics Table", class_="mt-4"),
+        ui.output_data_frame("stats_table"),
+        class_="container-fluid px-4",
+    )
+
+
+def _dirty_ui():
+    if dirty_df is None or len(dirty_df) == 0:
+        return ui.p("No dirty.csv found.", class_="text-muted p-4")
+
+    return ui.div(
+        ui.h3(
+            ui.tags.i(class_="bi bi-trash3 me-2"),
+            "Dirty Data Removed",
+            class_="mb-4 mt-3",
+        ),
+        ui.row(
+            ui.column(8, ui.h5("Rows Removed by Reason"), output_widget("dirty_chart")),
+            ui.column(4, kpi_card("Total Rows Removed", str(len(dirty_df)), "bi-exclamation-triangle-fill", "danger")),
+        ),
+        ui.h5("Removed Rows Detail", class_="mt-4"),
+        ui.output_data_frame("dirty_table"),
+        class_="container-fluid px-4",
+    )
+
+
+def _explorer_ui():
+    return ui.div(
+        ui.h3(
+            ui.tags.i(class_="bi bi-table me-2"),
+            "Data Explorer",
+            class_="mb-2 mt-3",
+        ),
+        ui.p(
+            f"Showing first 5,000 of {len(clean_df):,} total appointment records. "
+            "Use column headers to sort; type in the filter boxes to search.",
+            class_="text-muted mb-3",
+        ),
+        ui.output_data_frame("clean_table"),
+        class_="container-fluid px-4",
+    )
+
+
+# ── Assemble nav panels ───────────────────────────────────────────────────────
+
+_nav_panels: list = [
+    ui.nav_panel("Overview",       _overview_ui()),
+    ui.nav_panel("Charts Gallery", _gallery_ui()),
+    ui.nav_panel("Statistics",     _statistics_ui()),
+]
+if dirty_df is not None and len(dirty_df) > 0:
+    _nav_panels.append(ui.nav_panel("Dirty Data", _dirty_ui()))
+_nav_panels.append(ui.nav_panel("Data Explorer", _explorer_ui()))
+
+# ── App UI ────────────────────────────────────────────────────────────────────
+
+app_ui = ui.page_navbar(
+    # Static head: Bootstrap Icons font
+    ui.head_content(
+        ui.tags.link(rel="stylesheet", href=BI_CSS),
+    ),
+
+    # Nav panels
+    *_nav_panels,
+
+    # Dark / Light toggle — right-aligned in navbar via nav_control
+    ui.nav_control(
+        ui.div(
+            ui.output_ui("toggle_icon", inline=True),
+            ui.input_action_button(
+                "toggle_theme",
+                "",
+                class_="btn btn-sm ms-1",
+                style=(
+                    "border:none; background:transparent; "
+                    "cursor:pointer; padding:0.2rem 0.5rem;"
+                ),
+            ),
+            style="display:flex; align-items:center; gap:0.15rem; padding-right:0.5rem;",
+        )
+    ),
+
+    # Brand / title
+    title=ui.span(
+        ui.tags.i(class_="bi bi-activity me-2", style="color:#0dcaf0;"),
+        f"{PROJECT_NAME} — Data Intelligence",
+    ),
+    id="navbar",
+    inverse=True,
+
+    # Dynamic theme link injected above all tab content (persists across tab switches)
+    header=ui.output_ui("theme_link"),
+)
+
+
+# ── Server ────────────────────────────────────────────────────────────────────
+
+def server(input, output, session):
+    theme_dark = reactive.Value(True)  # start in dark mode
+
+    # ── Theme toggle ──────────────────────────────────────────────────────────
+    @reactive.effect
+    @reactive.event(input.toggle_theme)
+    def _flip_theme():
+        theme_dark.set(not theme_dark.get())
+
+    @render.ui
+    def theme_link():
+        href = DARKLY_CSS if theme_dark.get() else FLATLY_CSS
+        return ui.tags.link(rel="stylesheet", href=href)
+
+    @render.ui
+    def toggle_icon():
+        if theme_dark.get():
+            return ui.tags.i(
+                class_="bi bi-sun-fill",
+                style="font-size:1.25rem; color:#ffc107;",
+                title="Switch to light mode",
+            )
+        else:
+            return ui.tags.i(
+                class_="bi bi-moon-fill",
+                style="font-size:1.25rem; color:#6c757d;",
+                title="Switch to dark mode",
+            )
+
+    # ── Statistics charts ─────────────────────────────────────────────────────
+    if stats_df is not None:
+
+        @render_widget
+        def noshow_chart():
+            tpl = "plotly_dark" if theme_dark.get() else "plotly_white"
+            labels = ["Female", "Male", "No SMS", "SMS Received"]
+            keys   = ["Gender F", "Gender M", "No SMS", "SMS received"]
+            vals   = []
+            for k in keys:
+                row = stats_df[stats_df["metric"].str.contains(k, na=False)]
+                vals.append(float(row["value"].iloc[0]) if not row.empty else 0.0)
+            fig = px.bar(
+                x=labels, y=vals,
+                labels={"x": "Category", "y": "No-Show Rate (%)"},
+                title="No-Show Rate by Category",
+                template=tpl,
+                color=vals,
+                color_continuous_scale="RdYlGn_r",
+            )
+            fig.update_layout(showlegend=False, coloraxis_showscale=False, height=380)
+            return fig
+
+        @render_widget
+        def lead_chart():
+            tpl     = "plotly_dark" if theme_dark.get() else "plotly_white"
+            buckets = ["same-day", "1-7d", "8-30d", "31-90d", "90d+"]
+            vals    = []
+            for b in buckets:
+                row = stats_df[stats_df["metric"].str.contains(b, na=False)]
+                vals.append(float(row["value"].iloc[0]) if not row.empty else 0.0)
+            fig = px.bar(
+                x=buckets, y=vals,
+                labels={"x": "Lead Bucket", "y": "No-Show Rate (%)"},
+                title="No-Show Rate by Lead Days",
+                template=tpl,
+                color=vals,
+                color_continuous_scale="RdYlGn_r",
+            )
+            fig.update_layout(showlegend=False, coloraxis_showscale=False, height=380)
+            return fig
+
+        @render.data_frame
+        def stats_table():
+            return render.DataGrid(stats_df, filters=False, height="360px")
+
+    # ── Dirty data ────────────────────────────────────────────────────────────
+    if dirty_df is not None and len(dirty_df) > 0:
+
+        @render_widget
+        def dirty_chart():
+            tpl    = "plotly_dark" if theme_dark.get() else "plotly_white"
+            counts = dirty_df["reason"].value_counts().reset_index()
+            counts.columns = ["reason", "count"]
+            fig = px.bar(
+                counts, x="reason", y="count",
+                title="Dirty Rows Removed by Reason",
+                template=tpl,
+                color="count",
+                color_continuous_scale="Reds",
+            )
+            fig.update_layout(showlegend=False, coloraxis_showscale=False, height=350)
+            return fig
+
+        @render.data_frame
+        def dirty_table():
+            return render.DataGrid(dirty_df, filters=True, height="400px")
+
+    # ── Data Explorer ─────────────────────────────────────────────────────────
+    @render.data_frame
+    def clean_table():
+        display_cols = [
+            "AppointmentID", "Gender", "Age", "Neighbourhood",
+            "lead_days", "SMS_received", "No-show", "noshow_flag",
+            "age_group", "lead_bucket", "appointment_dow", "appointment_month",
+        ]
+        cols = [c for c in display_cols if c in clean_df.columns]
+        return render.DataGrid(clean_df[cols].head(5000), filters=True, height="600px")
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+
+app = App(app_ui, server)
+
+if __name__ == "__main__":
+    import uvicorn
+    print(f"\n  Dashboard: http://127.0.0.1:{PORT}")
+    print(f"  Project  : {PROJECT_NAME}")
+    print(f"  Toggle dark/light mode with the icon in the top-right navbar.\n")
+    uvicorn.run(app, host="127.0.0.1", port=PORT)

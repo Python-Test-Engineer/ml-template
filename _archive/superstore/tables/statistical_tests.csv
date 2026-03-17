@@ -1,0 +1,5 @@
+test_name,statistic,p_value,dof,conclusion
+Profit ~ Region,232.1385,0.0,3,significant
+Profit ~ Segment,3.577,0.167215,2,not significant
+Profit ~ Category,418.3553,0.0,2,significant
+Segment x Ship Mode (chi-square),28.6516,7.1e-05,6,significant

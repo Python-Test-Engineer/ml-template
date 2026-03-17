@@ -1,0 +1,73 @@
+============================================================
+=== SUPERSTORE SALES - ANALYSIS REPORT ===
+============================================================
+Generated: 2026-03-17 13:46:01
+
+--- 1. DATASET OVERVIEW ---
+  Superstore: 9,887 rows after removing 121 dirty rows
+  Date range: 2014-01-03 to 2017-12-30
+  Web Traffic: available as supplementary dataset (web_traffic.csv)
+
+--- 2. PROFITABILITY BY CATEGORY ---
+  Category            Sub-Category        mean_profit     pct_loss  
+  ------------------------------------------------------------------
+  Furniture           Bookcases           -9.04           47.6      
+  Furniture           Chairs              40.77           38.2      
+  Furniture           Furnishings         13.65           17.4      
+  Furniture           Tables              -39.31          63.1      
+  Office Supplies     Appliances          38.62           14.1      
+  Office Supplies     Art                 8.2             0.0       
+  Office Supplies     Binders             11.57           40.2      
+  Office Supplies     Envelopes           27.42           0.0       
+  Office Supplies     Fasteners           4.38            5.5       
+  Office Supplies     Labels              15.24           0.0       
+  Office Supplies     Paper               24.86           0.0       
+  Office Supplies     Storage             24.24           19.0      
+  Office Supplies     Supplies            3.44            16.5      
+  Technology          Accessories         50.4            11.8      
+  Technology          Copiers             263.12          0.0       
+  Technology          Machines            27.07           37.4      
+  Technology          Phones              46.18           15.4      
+
+  Top 3 most profitable sub-categories  : Copiers, Accessories, Phones
+  Bottom 3 least profitable sub-categories: Tables, Bookcases, Supplies
+
+--- 3. DISCOUNT BREAKEVEN ---
+  Furniture            breakeven bucket: (0.24, 0.32]
+  Office Supplies      breakeven bucket: (0.64, 0.72]
+  Technology           breakeven bucket: (0.32, 0.4]
+
+--- 4. STATISTICAL TESTS ---
+  test_name                               statistic     p_value       conclusion        
+  --------------------------------------------------------------------------------------
+  Profit ~ Region                         232.1385      0.0           significant       
+  Profit ~ Segment                        3.577         0.167215      not significant   
+  Profit ~ Category                       418.3553      0.0           significant       
+  Segment x Ship Mode (chi-square)        28.6516       7.1e-05       significant       
+
+--- 5. RFM CUSTOMER SEGMENTS ---
+  Segment           Count     Pct     
+  ------------------------------------
+  Mid-tier          516       65.1%   
+  At Risk           173       21.8%   
+  Loyal             68        8.6%    
+  Champions         36        4.5%    
+
+--- 6. MODEL RESULTS ---
+  model_name                cv_auroc_mean     cv_auroc_std    cv_f1_mean      cv_f1_std   
+  ----------------------------------------------------------------------------------------
+  Logistic Regression       0.9827            0.0015          0.8835          0.0076      
+  Random Forest             0.9836            0.0005          0.9052          0.0054      
+  XGBoost                   0.9855            0.0015          0.8959          0.0056      
+
+  Best model by AUROC : XGBoost (AUROC=0.9855)
+  Note: Feature importance details saved in output/PROJECT_02/plots/15_feature_importance.png
+
+--- 7. KEY FINDINGS ---
+  1. 'Tables' has the highest loss rate at 63.1% of orders unprofitable.
+  2. Furniture orders turn loss-making at discount bucket (0.24, 0.32]; Office Supplies sustain profit much longer.
+  3. XGBoost is the best classifier (CV AUROC=0.9855), confirming that loss-making orders are highly predictable.
+  4. Only 4.5% of customers qualify as 'Champions' while 21.8% are 'At Risk' — retention opportunity.
+  5. Kruskal-Wallis tests confirm profit differs significantly across Category and Region (p<0.05), but NOT across Segment.
+
+============================================================

@@ -1,0 +1,18 @@
+metric,value
+Total appointments (after cleaning),110521
+Total unique patients,62298
+Overall no-show rate (%),20.19
+No-show rate — Gender F (%),20.31
+No-show rate — Gender M (%),19.96
+No-show rate — Lead bucket same-day (%),4.65
+No-show rate — Lead bucket 1-7d (%),24.15
+No-show rate — Lead bucket 8-30d (%),31.72
+No-show rate — Lead bucket 31-90d (%),33.16
+No-show rate — Lead bucket 90d+ (%),25.81
+No-show rate — No SMS (%),16.70
+No-show rate — SMS received (%),27.57
+Mean lead_days,10.2
+Median lead_days,4
+Most common neighbourhood,JARDIM CAMBURI
+Neighbourhood with highest no-show rate (min 50 appts),SANTOS DUMONT (28.9%)
+Neighbourhood with lowest no-show rate (min 50 appts),MÁRIO CYPRESTE (14.6%)

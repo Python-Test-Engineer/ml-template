@@ -1,0 +1,4 @@
+model_name,cv_auroc_mean,cv_auroc_std,cv_f1_mean,cv_f1_std,precision_0,recall_0,f1_0,precision_1,recall_1,f1_1
+Logistic Regression,0.9827,0.0015,0.8835,0.0076,0.9847,0.9214,0.952,0.7309,0.9373,0.8213
+Random Forest,0.9836,0.0005,0.9052,0.0054,1.0,1.0,1.0,1.0,1.0,1.0
+XGBoost,0.9855,0.0015,0.8959,0.0056,0.9995,0.9644,0.9816,0.8644,0.9978,0.9263

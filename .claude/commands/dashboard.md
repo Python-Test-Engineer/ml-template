@@ -1,19 +1,11 @@
 ---
-description: "Build and launch an interactive Shiny Dash dashboard from a PROJECT_XX output folder. Usage: /dashboard output/PROJECT_XX"
+description: "Build and launch an interactive Shiny dashboard from a PROJECT_XX output folder. Usage: /dashboard"
 allowed-tools: Read, Glob, Grep, Bash(uv run python *), Bash(uv add *), Write, AskUserQuestion
-argument: "Path to an output folder, e.g. output/PROJECT_02 — REQUIRED"
-hint: "Provide the output folder path as an argument, e.g. /dashboard output/PROJECT_02"
 ---
 
-**Argument required:** path to a project output folder, e.g. `output/PROJECT_02`. Find the PROJECT with the largest _XX number and add 1 to create PROJECT_YY where YY is one up from XX.
+Create a dashboard file in `src/dashboard.py` using **Shiny for Python only**.
 
-If no argument is given, list available folders:
-
-```
-Glob: output/PROJECT_*
-```
-
-Then stop and ask the user to re-run with the correct folder path.
+Auto-discover the most recent project output folder by globbing `output/PROJECT_*` and selecting the one with the highest `_XX` number.
 
 ---
 
@@ -22,9 +14,9 @@ Then stop and ask the user to re-run with the correct folder path.
 You are an experienced data visualisation engineer. Your job is to:
 
 1. Inspect the output folder at `$ARGUMENTS`
-2. Discover all available data files (CSVs, PNGs, report.txt, parquets)
+2. Discover all available data files (CSVs, PNGs, report HTML/txt, parquets, summary stats)
 3. Install any missing dependencies
-4. Write a production-quality **Plotly Dash** multi-page dashboard in `src/dashboard.py`
+4. Write a production-quality **Shiny for Python** multi-page dashboard in `src/dashboard.py`
 5. Run it and confirm it launches successfully
 
 ---
@@ -32,89 +24,182 @@ You are an experienced data visualisation engineer. Your job is to:
 ## Step 1 — Discover the output folder contents
 
 Scan `$ARGUMENTS` for:
-- `tables/*.csv` — structured data tables
-- `model/*.csv` — model metrics
+- `plots/*.png` — static chart images
+- `*.csv` — data tables (summary_stats, dirty, etc.)
 - `*.parquet` — clean datasets
-- `plots/*.png` — static charts already generated
-- `report.txt` — text summary
-- `dirty.csv` — removed rows
+- `report.html` or `report.txt` — narrative summary
+- `tables/*.csv` — structured sub-tables
+- `model/*.csv` — model metrics
 
-Build a manifest of what is available.
+Build a manifest of what is available. Adapt tabs to what actually exists — skip tabs for missing data.
 
 ---
 
 ## Step 2 — Install dependencies
 
 ```bash
-uv add dash dash-bootstrap-components plotly pandas
+uv add shiny shinyswatch shinywidgets plotly pandas pyarrow
 ```
 
 ---
 
 ## Step 3 — Write `src/dashboard.py`
 
-### Architecture
-
-Build a **multi-tab Dash app** using `dash-bootstrap-components`. One tab per data domain:
-
-| Tab | Content |
-|-----|---------|
-| **Overview** | KPI cards (total rows, dirty rows, date range, loss rate), report.txt rendered as pre-formatted text |
-| **Profitability** | Interactive bar + scatter charts from `profit_by_category.csv`; filterable by Category |
-| **Discount Analysis** | Scatter of Discount vs Profit (from parquet) with colour-coded loss/profit; breakeven table |
-| **RFM Segments** | Pie chart of segments; sortable DataTable of RFM scores with search |
-| **Statistics** | DataTable of statistical test results; correlation heatmap image |
-| **Models** | Bar chart of CV AUROC and F1 per model; inline PNG images for feature importance + ROC curves |
-| **Charts Gallery** | All 16 static PNG plots displayed in a responsive image grid |
-
-### Design rules
-
-- Use `dash_bootstrap_components.themes.DARKLY` theme
-- All charts built with `plotly.express` or `plotly.graph_objects` — **not** matplotlib (those are already saved PNGs)
-- For PNGs: serve them as static assets via `app.server.static_folder` or encode as base64 inline
-- KPI cards: use `dbc.Card` with a large number and a subtitle
-- DataTables: use `dash.dash_table.DataTable` with `filter_action="native"`, `sort_action="native"`, `page_size=15`
-- All chart containers: `style={"height": "500px"}` minimum
-- App title: `"Superstore Analytics Dashboard — {PROJECT_XX}"`
-- Port: `8050`; `debug=False` when run as script
-
 ### Constants at top of file
 
+Resolve the output folder at script startup by finding the highest-numbered `PROJECT_XX` folder:
+
 ```python
-OUTPUT_DIR = Path("$ARGUMENTS")
-PROJECT_NAME = OUTPUT_DIR.name   # e.g. "PROJECT_02"
-PORT = 8050
+from pathlib import Path
+
+_candidates = sorted(Path("output").glob("PROJECT_*"))
+OUTPUT_DIR   = _candidates[-1]          # highest PROJECT_XX
+PROJECT_NAME = OUTPUT_DIR.name          # e.g. "PROJECT_01"
+PORT         = 8000
 ```
 
-### PNG serving
+### Architecture
 
-Encode each PNG as base64 for inline embedding (avoids static file server complexity on Windows):
+Use `shiny.ui.page_navbar()` as the top-level layout with:
+
+- A **brand title** on the left: `f"{PROJECT_NAME} — Data Intelligence Dashboard"`
+- A **dark/light mode toggle** icon button in the navbar header (top-right)
+- One `ui.nav_panel()` per data domain (see tab table below)
+
+### Dark / Light mode toggle
+
+Add Bootstrap Icons via CDN in `ui.head_content()`. Use a single `ui.input_action_button` with an id of `"toggle_theme"` styled as an icon-only button, showing a **moon icon** in light mode and a **sun icon** in dark mode. Implement via a `reactive.Value` that tracks the current theme and a `@render.ui` that injects a `<link>` tag swapping between `bootswatch` Flatly (light) and Darkly (dark) stylesheets. The button label must update reactively to show the correct icon.
+
+```python
+# Head content — Bootstrap Icons CDN
+ui.head_content(
+    ui.tags.link(
+        rel="stylesheet",
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    )
+)
+
+# In server:
+theme_dark = reactive.Value(True)   # start in dark mode
+
+@reactive.effect
+@reactive.event(input.toggle_theme)
+def _flip_theme():
+    theme_dark.set(not theme_dark.get())
+
+@render.ui
+def theme_link():
+    if theme_dark.get():
+        href = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/darkly/bootstrap.min.css"
+    else:
+        href = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/flatly/bootstrap.min.css"
+    return ui.tags.link(rel="stylesheet", href=href)
+
+@render.ui
+def toggle_icon():
+    icon = "bi-sun-fill" if theme_dark.get() else "bi-moon-fill"
+    return ui.tags.i(class_=f"bi {icon}", style="font-size:1.3rem;")
+```
+
+Place `ui.output_ui("theme_link")` inside `ui.head_content()` and the toggle button in the navbar's `header=` argument:
+
+```python
+header=ui.div(
+    ui.output_ui("toggle_icon", inline=True),
+    ui.input_action_button(
+        "toggle_theme", "",
+        class_="btn btn-outline-secondary btn-sm ms-2",
+        style="border:none; background:transparent;"
+    ),
+    style="display:flex; align-items:center; margin-left:auto; padding-right:1rem;"
+)
+```
+
+### Tabs — adapt to available files
+
+| Tab | Condition | Content |
+|-----|-----------|---------|
+| **Overview** | always | KPI cards: total rows, dirty rows removed, number of plots, date of run. Render `report.html` in an `iframe` or `report.txt` in a `<pre>` block. |
+| **Charts Gallery** | `plots/*.png` exist | Responsive image grid — encode each PNG as base64 inline. Group images in rows of 3 using Bootstrap grid (`col-md-4`). |
+| **Data Tables** | any `*.csv` or `*.parquet` | Tabbed sub-panels, one per file. Use `ui.output_data_frame` / `render.DataGrid` with sorting and filtering. |
+| **Statistics** | `summary_stats.csv` exists | Bar charts of key numeric columns; render the CSV as a styled DataGrid. |
+| **Dirty Data** | `dirty.csv` exists | Show removed rows count by reason using a bar chart; render full dirty table. |
+
+### PNG embedding helper
 
 ```python
 import base64
-def encode_image(path: Path) -> str:
+
+def encode_png(path: Path) -> str:
     return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
 ```
 
-### Layout skeleton
+### Plotly charts
+
+All interactive charts must use `plotly.express` or `plotly.graph_objects`. Render them with `@render_widget` from `shinywidgets`:
 
 ```python
-app.layout = dbc.Container([
-    dbc.Row(dbc.Col(html.H1(f"Superstore Analytics — {PROJECT_NAME}"))),
-    dbc.Tabs([
-        dbc.Tab(label="Overview",        tab_id="overview"),
-        dbc.Tab(label="Profitability",   tab_id="profit"),
-        dbc.Tab(label="Discount",        tab_id="discount"),
-        dbc.Tab(label="RFM Segments",    tab_id="rfm"),
-        dbc.Tab(label="Statistics",      tab_id="stats"),
-        dbc.Tab(label="Models",          tab_id="models"),
-        dbc.Tab(label="Charts Gallery",  tab_id="gallery"),
-    ], id="tabs", active_tab="overview"),
-    html.Div(id="tab-content"),
-], fluid=True)
+from shinywidgets import output_widget, render_widget
+import plotly.express as px
+
+# In UI:
+output_widget("my_chart")
+
+# In server:
+@render_widget
+def my_chart():
+    fig = px.bar(df, x="col_a", y="col_b", title="My Chart")
+    fig.update_layout(template="plotly_dark" if theme_dark.get() else "plotly_white")
+    return fig
 ```
 
-Use a single callback `@app.callback(Output("tab-content", "children"), Input("tabs", "active_tab"))` to render each tab's content lazily.
+Always pass `template="plotly_dark"` or `"plotly_white"` based on `theme_dark.get()` so charts match the current theme.
+
+### KPI card helper
+
+```python
+def kpi_card(title: str, value: str, icon: str = "bi-bar-chart-fill", color: str = "primary"):
+    return ui.div(
+        ui.div(
+            ui.tags.i(class_=f"bi {icon}", style="font-size:2rem;"),
+            ui.h2(value, class_="mt-1 mb-0"),
+            ui.p(title, class_="text-muted mb-0"),
+            class_="card-body text-center"
+        ),
+        class_=f"card border-{color} mb-3"
+    )
+```
+
+### Full layout skeleton
+
+```python
+app_ui = ui.page_navbar(
+    ui.head_content(
+        ui.tags.link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"),
+        ui.output_ui("theme_link"),
+    ),
+    # --- nav panels go here ---
+    ui.nav_panel("Overview",       overview_ui()),
+    ui.nav_panel("Charts Gallery", gallery_ui()),
+    ui.nav_panel("Data Tables",    tables_ui()),
+    # add / remove panels based on available files
+    title=f"{PROJECT_NAME} — Data Intelligence",
+    header=ui.div(
+        ui.output_ui("toggle_icon", inline=True),
+        ui.input_action_button(
+            "toggle_theme", "",
+            class_="btn btn-sm ms-2",
+            style="border:none; background:transparent; cursor:pointer;"
+        ),
+        style="display:flex; align-items:center; margin-left:auto; padding-right:1rem;"
+    ),
+    id="navbar",
+    bg="#222" ,        # overridden by the dynamic theme link anyway
+    inverse=True,
+)
+
+app = App(app_ui, server)
+```
 
 ---
 
@@ -124,27 +209,26 @@ Use a single callback `@app.callback(Output("tab-content", "children"), Input("t
 uv run python src/dashboard.py
 ```
 
-The app should start and print:
+The app should start and print something like:
 ```
-Dash is running on http://127.0.0.1:8050/
-```
-
-Run in **background** so it does not block. Then open the URL in the browser:
-
-```bash
-start http://127.0.0.1:8050
+Uvicorn running on http://127.0.0.1:8000
 ```
 
-(On Windows use `start`, on macOS use `open`, on Linux use `xdg-open`.)
+Run in **background** so it does not block. Then open in the browser:
+
+- Windows: `start http://127.0.0.1:8000`
+- macOS: `open http://127.0.0.1:8000`
+- Linux: `xdg-open http://127.0.0.1:8000`
 
 ---
 
 ## Step 5 — Confirm and report
 
 Tell the user:
-- The URL to open: `http://127.0.0.1:8050`
-- Which tabs are available and what data each shows
-- The script location: `src/dashboard.py`
-- Any files that were missing and therefore skipped
+- URL: `http://127.0.0.1:8000`
+- Which tabs are active and what data each shows
+- Script location: `src/dashboard.py`
+- Any files that were missing and skipped
+- How to toggle dark/light mode (the icon button top-right of the navbar)
 
 If the app fails to start, read the full traceback, fix the root cause, and re-run once. Do not retry the same failing command more than twice.
