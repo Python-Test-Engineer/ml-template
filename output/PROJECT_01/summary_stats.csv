@@ -1,18 +1,231 @@
-metric,value
-Total appointments (after cleaning),110521
-Total unique patients,62298
-Overall no-show rate (%),20.19
-No-show rate — Gender F (%),20.31
-No-show rate — Gender M (%),19.96
-No-show rate — Lead bucket same-day (%),4.65
-No-show rate — Lead bucket 1-7d (%),24.15
-No-show rate — Lead bucket 8-30d (%),31.72
-No-show rate — Lead bucket 31-90d (%),33.16
-No-show rate — Lead bucket 90d+ (%),25.81
-No-show rate — No SMS (%),16.70
-No-show rate — SMS received (%),27.57
-Mean lead_days,10.2
-Median lead_days,4
-Most common neighbourhood,JARDIM CAMBURI
-Neighbourhood with highest no-show rate (min 50 appts),SANTOS DUMONT (28.9%)
-Neighbourhood with lowest no-show rate (min 50 appts),MÁRIO CYPRESTE (14.6%)
+table,metric_name,metric_value
+kpis,total_revenue,97657.5
+kpis,order_count,48
+kpis,avg_order_value,2034.53
+kpis,median_order_value,1915.0
+kpis,top_region,South
+kpis,top_product,Data Cleansing Service
+kpis,top_sales_rep,Sarah Mitchell
+kpis,top_customer,Delta Corp
+kpis,pending_count,5
+kpis,pending_revenue,10190.0
+kpis,repeat_customer_count,0
+kpis,one_time_customer_count,48
+monthly_revenue,month,2025-01
+monthly_revenue,revenue_sum,18555.0
+monthly_revenue,aov,1855.5
+monthly_revenue,order_count,10
+monthly_revenue,mom_growth_pct,
+monthly_revenue,month,2025-02
+monthly_revenue,revenue_sum,17074.0
+monthly_revenue,aov,1897.111111111111
+monthly_revenue,order_count,9
+monthly_revenue,mom_growth_pct,-7.981676098086766
+monthly_revenue,month,2025-03
+monthly_revenue,revenue_sum,24968.5
+monthly_revenue,aov,2269.8636363636365
+monthly_revenue,order_count,11
+monthly_revenue,mom_growth_pct,46.2369684901019
+monthly_revenue,month,2025-04
+monthly_revenue,revenue_sum,22790.0
+monthly_revenue,aov,1899.1666666666667
+monthly_revenue,order_count,12
+monthly_revenue,mom_growth_pct,-8.72499349179967
+monthly_revenue,month,2025-05
+monthly_revenue,revenue_sum,14270.0
+monthly_revenue,aov,2378.3333333333335
+monthly_revenue,order_count,6
+monthly_revenue,mom_growth_pct,-37.38481790258885
+revenue_by_region,region,South
+revenue_by_region,revenue_sum,27172.0
+revenue_by_region,aov,2090.153846153846
+revenue_by_region,order_count,13
+revenue_by_region,region,North
+revenue_by_region,revenue_sum,25539.0
+revenue_by_region,aov,1964.5384615384614
+revenue_by_region,order_count,13
+revenue_by_region,region,West
+revenue_by_region,revenue_sum,22855.0
+revenue_by_region,aov,2077.7272727272725
+revenue_by_region,order_count,11
+revenue_by_region,region,East
+revenue_by_region,revenue_sum,22091.5
+revenue_by_region,aov,2008.3181818181818
+revenue_by_region,order_count,11
+revenue_by_category,category,Web Dev
+revenue_by_category,revenue_sum,32522.5
+revenue_by_category,aov,2032.65625
+revenue_by_category,order_count,16
+revenue_by_category,category,Software
+revenue_by_category,revenue_sum,31385.0
+revenue_by_category,aov,1961.5625
+revenue_by_category,order_count,16
+revenue_by_category,category,Consulting
+revenue_by_category,revenue_sum,20025.0
+revenue_by_category,aov,2503.125
+revenue_by_category,order_count,8
+revenue_by_category,category,Training
+revenue_by_category,revenue_sum,13725.0
+revenue_by_category,aov,1715.625
+revenue_by_category,order_count,8
+revenue_by_product,product,Data Cleansing Service
+revenue_by_product,revenue_sum,20025.0
+revenue_by_product,aov,2503.125
+revenue_by_product,order_count,8
+revenue_by_product,product,Dashboard Build
+revenue_by_product,revenue_sum,18370.0
+revenue_by_product,aov,2296.25
+revenue_by_product,order_count,8
+revenue_by_product,product,Data Analytics Pro
+revenue_by_product,revenue_sum,16440.0
+revenue_by_product,aov,2055.0
+revenue_by_product,order_count,8
+revenue_by_product,product,Insight Reporting Suite
+revenue_by_product,revenue_sum,14945.0
+revenue_by_product,aov,1868.125
+revenue_by_product,order_count,8
+revenue_by_product,product,Web Starter Package
+revenue_by_product,revenue_sum,14152.5
+revenue_by_product,aov,1769.0625
+revenue_by_product,order_count,8
+revenue_by_product,product,AI Training Workshop
+revenue_by_product,revenue_sum,13725.0
+revenue_by_product,aov,1715.625
+revenue_by_product,order_count,8
+sales_rep_performance,sales_rep,Sarah Mitchell
+sales_rep_performance,revenue_sum,25539.0
+sales_rep_performance,aov,1964.5384615384614
+sales_rep_performance,order_count,13
+sales_rep_performance,avg_discount,5.769230769230769
+sales_rep_performance,sales_rep,James Okafor
+sales_rep_performance,revenue_sum,24172.0
+sales_rep_performance,aov,2014.3333333333333
+sales_rep_performance,order_count,12
+sales_rep_performance,avg_discount,2.9166666666666665
+sales_rep_performance,sales_rep,Tom Richards
+sales_rep_performance,revenue_sum,22855.0
+sales_rep_performance,aov,2077.7272727272725
+sales_rep_performance,order_count,11
+sales_rep_performance,avg_discount,5.0
+sales_rep_performance,sales_rep,Priya Sharma
+sales_rep_performance,revenue_sum,22091.5
+sales_rep_performance,aov,2008.3181818181818
+sales_rep_performance,order_count,11
+sales_rep_performance,avg_discount,8.636363636363637
+sales_rep_performance,sales_rep,
+sales_rep_performance,revenue_sum,3000.0
+sales_rep_performance,aov,3000.0
+sales_rep_performance,order_count,1
+sales_rep_performance,avg_discount,0.0
+top_customers,customer_name,Delta Corp
+top_customers,revenue_sum,4080.0
+top_customers,order_count,1
+top_customers,customer_name,Ironclad Systems
+top_customers,revenue_sum,3960.0
+top_customers,order_count,1
+top_customers,customer_name,Delphi Data
+top_customers,revenue_sum,3920.0
+top_customers,order_count,1
+top_customers,customer_name,Global Reach Ltd
+top_customers,revenue_sum,3825.0
+top_customers,order_count,1
+top_customers,customer_name,Hartwell & Sons
+top_customers,revenue_sum,3240.0
+top_customers,order_count,1
+top_customers,customer_name,Paragon Software
+top_customers,revenue_sum,3060.0
+top_customers,order_count,1
+top_customers,customer_name,Titan Web Group
+top_customers,revenue_sum,3060.0
+top_customers,order_count,1
+top_customers,customer_name,Yield Analytics
+top_customers,revenue_sum,3000.0
+top_customers,order_count,1
+top_customers,customer_name,Mu Analytics
+top_customers,revenue_sum,3000.0
+top_customers,order_count,1
+top_customers,customer_name,Sterling & Webb
+top_customers,revenue_sum,2850.0
+top_customers,order_count,1
+customer_concentration,top_n,1.0
+customer_concentration,revenue_sum,4080.0
+customer_concentration,pct_of_total,4.177866523308501
+customer_concentration,top_n,3.0
+customer_concentration,revenue_sum,11960.0
+customer_concentration,pct_of_total,12.24688323989453
+customer_concentration,top_n,5.0
+customer_concentration,revenue_sum,19025.0
+customer_concentration,pct_of_total,19.481350638711824
+customer_concentration,top_n,10.0
+customer_concentration,revenue_sum,33995.0
+customer_concentration,pct_of_total,34.81043442643934
+status_breakdown,status,Completed
+status_breakdown,order_count,43
+status_breakdown,revenue_sum,87467.5
+status_breakdown,status,Pending
+status_breakdown,order_count,5
+status_breakdown,revenue_sum,10190.0
+region_category_heatmap,region,East
+region_category_heatmap,category,Consulting
+region_category_heatmap,revenue_sum,0.0
+region_category_heatmap,region,North
+region_category_heatmap,category,Consulting
+region_category_heatmap,revenue_sum,9675.0
+region_category_heatmap,region,South
+region_category_heatmap,category,Consulting
+region_category_heatmap,revenue_sum,10350.0
+region_category_heatmap,region,West
+region_category_heatmap,category,Consulting
+region_category_heatmap,revenue_sum,0.0
+region_category_heatmap,region,East
+region_category_heatmap,category,Software
+region_category_heatmap,revenue_sum,8124.0
+region_category_heatmap,region,North
+region_category_heatmap,category,Software
+region_category_heatmap,revenue_sum,6864.0
+region_category_heatmap,region,South
+region_category_heatmap,category,Software
+region_category_heatmap,revenue_sum,4557.0
+region_category_heatmap,region,West
+region_category_heatmap,category,Software
+region_category_heatmap,revenue_sum,11840.0
+region_category_heatmap,region,East
+region_category_heatmap,category,Training
+region_category_heatmap,revenue_sum,5850.0
+region_category_heatmap,region,North
+region_category_heatmap,category,Training
+region_category_heatmap,revenue_sum,3060.0
+region_category_heatmap,region,South
+region_category_heatmap,category,Training
+region_category_heatmap,revenue_sum,855.0
+region_category_heatmap,region,West
+region_category_heatmap,category,Training
+region_category_heatmap,revenue_sum,3960.0
+region_category_heatmap,region,East
+region_category_heatmap,category,Web Dev
+region_category_heatmap,revenue_sum,8117.5
+region_category_heatmap,region,North
+region_category_heatmap,category,Web Dev
+region_category_heatmap,revenue_sum,5940.0
+region_category_heatmap,region,South
+region_category_heatmap,category,Web Dev
+region_category_heatmap,revenue_sum,11410.0
+region_category_heatmap,region,West
+region_category_heatmap,category,Web Dev
+region_category_heatmap,revenue_sum,7055.0
+discount_summary,category,Consulting
+discount_summary,avg_discount,3.125
+discount_summary,max_discount,15
+discount_summary,min_discount,0
+discount_summary,category,Software
+discount_summary,avg_discount,5.3125
+discount_summary,max_discount,15
+discount_summary,min_discount,0
+discount_summary,category,Training
+discount_summary,avg_discount,5.625
+discount_summary,max_discount,15
+discount_summary,min_discount,0
+discount_summary,category,Web Dev
+discount_summary,avg_discount,6.5625
+discount_summary,max_discount,20
+discount_summary,min_discount,0

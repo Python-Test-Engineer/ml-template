@@ -1,32 +1,31 @@
 ---
-description: "Analyse images and Python scripts to generate deep business & data insights report. Usage: /insights <image_folder> <python_folder>"
+description: "Analyse images in a folder to generate deep business & data insights report. Usage: /insights <image_folder>"
 allowed-tools: Read, Glob, Grep, Write, Edit, Bash(uv run python *), AskUserQuestion
-hint: "Provide two paths: the image folder and the Python scripts folder, e.g. /insights output/PROJECT_01/plots src"
-argument: "Two space-separated paths — image_folder python_folder — REQUIRED"
+hint: "Provide path to the image folder"
+argument: "image_folder — REQUIRED"
 model: Opus
 ---
 
 > **Model:** This command requires **claude-opus-4-6** (Claude Opus 4.6). If you are not already running that model, switch with `/model claude-opus-4-6` before invoking.
 > **Thinking:** This command uses **ultrathink** — extended thinking with maximum token budget — for each insight synthesis step. Do not skip or abbreviate the thinking phase.
 
-**Arguments required:** `<image_folder> <python_folder>`
-Example: `/insights output/PROJECT_01/plots src`
+**Arguments required:** `<image_folder>`
+Example: `/insights output/PROJECT_01/plots`
 
-Parse `$ARGUMENTS` as two whitespace-separated tokens:
+Parse `$ARGUMENTS`:
 - `IMAGE_FOLDER` — first token
-- `PYTHON_FOLDER` — second token
 
-If either is missing, list available folders under `output/` and `src/` then ask the user to re-run with both paths.
 
+If it is missing, list available folders under `output/` and ask user to select
 ---
 
 ## Your role
 
 You are a senior data scientist and business intelligence consultant with expertise in translating analytical visuals into actionable strategy. Your job is to:
 
-1. Read every Python script in `PYTHON_FOLDER` once for context
-2. Loop through each image in `IMAGE_FOLDER` **one at a time**, producing an individual insight report per image
-3. After all individual reports are written, merge them into a final `insights.md` and `insights.html`
+
+1. Loop through each **image** in `IMAGE_FOLDER` **one at a time**, producing an individual insight report per image
+2. After all individual reports are written, merge them into a final `insights.md` and `insights.html`
 
 ---
 
@@ -57,18 +56,6 @@ Set `INSIGHTS_FOLDER` = `output/PROJECT_XX/insights`
 ```
 
 Build a sorted list of all image files: `[filename, file_path]`.
-
-**Python scripts** — glob `PYTHON_FOLDER` for:
-```
-**/*.py
-```
-
-Read every `.py` file in full. Extract and mentally note:
-- What data is loaded and from where
-- What transformations, feature engineering, or modelling steps are performed
-- What metrics, statistics, or model outputs are computed
-- What plots are generated and what they are intended to show
-- Any domain-specific logic (clinical thresholds, business rules, etc.)
 
 ---
 
@@ -191,7 +178,6 @@ Write `INSIGHTS_FOLDER/insights.md` using this structure:
 
 **Project:** PROJECT_XX
 **Images analysed:** N
-**Scripts analysed:** N
 **Generated:** YYYY-MM-DD
 
 ---
@@ -208,7 +194,7 @@ Write `INSIGHTS_FOLDER/insights.md` using this structure:
 
 **Source charts:** [List the specific chart filenames that support this insight]
 
-**Observation:** [What the data/visuals show, with specific references to chart names or script outputs]
+**Observation:** [What the data/visuals show, with specific references to chart names or values visible in the images]
 
 **Implication:** [What this means for the business, research question, or decision at hand]
 
@@ -225,7 +211,7 @@ Write `INSIGHTS_FOLDER/insights.md` using this structure:
 
 ## Patterns Across Analyses
 
-[Cross-cutting observations that emerge only when multiple charts/scripts are viewed together — things invisible in any single view]
+[Cross-cutting observations that emerge only when multiple charts are viewed together — things invisible in any single view]
 
 ---
 
@@ -268,10 +254,6 @@ Write `INSIGHTS_FOLDER/insights.md` using this structure:
 |------|------------------------------------|
 | ...  | ...                                |
 
-### Python Scripts
-| File | Purpose |
-|------|---------|
-| ...  | ...     |
 ```
 
 ---
@@ -338,7 +320,7 @@ Embed the full report content from `insights.md` translated into rich HTML — d
 
 Tell the user:
 
-- How many images and scripts were analysed
+- How many images were analysed
 - How many individual insight files were generated
 - How many synthesised insights in the final report
 - The top 3 insight titles as a quick preview

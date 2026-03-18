@@ -15,7 +15,7 @@ Glob: _plans/**/*.md
 
 Then stop and ask the user to re-run with the correct file.
 
-Save output file to `_specs/jkaggle_specs.md`
+Save output file to `_specs/kaggle_specs.md`
 
 ---
 

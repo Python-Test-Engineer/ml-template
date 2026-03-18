@@ -41,6 +41,8 @@ Build a manifest of what is available. Adapt tabs to what actually exists — sk
 uv add shiny shinyswatch shinywidgets plotly pandas pyarrow
 ```
 
+Install all of the above. `plotly` and `shinywidgets` are only used where Shiny has no native equivalent — do not add Plotly charts where Shiny's built-in components (`render.DataGrid`, `ui.tags.img`, `ui.tags.iframe`, `ui.HTML`) are sufficient.
+
 ---
 
 ## Step 3 — Write `src/dashboard.py`
@@ -55,7 +57,7 @@ from pathlib import Path
 _candidates = sorted(Path("output").glob("PROJECT_*"))
 OUTPUT_DIR   = _candidates[-1]          # highest PROJECT_XX
 PROJECT_NAME = OUTPUT_DIR.name          # e.g. "PROJECT_01"
-PORT         = 8000
+PORT         = random.randint(8000, 8999)
 ```
 
 ### Architecture
@@ -117,13 +119,13 @@ header=ui.div(
 
 ### Tabs — adapt to available files
 
-| Tab | Condition | Content |
-|-----|-----------|---------|
-| **Overview** | always | KPI cards: total rows, dirty rows removed, number of plots, date of run. Render `report.html` in an `iframe` or `report.txt` in a `<pre>` block. |
-| **Charts Gallery** | `plots/*.png` exist | Responsive image grid — encode each PNG as base64 inline. Group images in rows of 3 using Bootstrap grid (`col-md-4`). |
-| **Data Tables** | any `*.csv` or `*.parquet` | Tabbed sub-panels, one per file. Use `ui.output_data_frame` / `render.DataGrid` with sorting and filtering. |
-| **Statistics** | `summary_stats.csv` exists | Bar charts of key numeric columns; render the CSV as a styled DataGrid. |
-| **Dirty Data** | `dirty.csv` exists | Show removed rows count by reason using a bar chart; render full dirty table. |
+| Tab | Condition | Content | Rendering approach |
+|-----|-----------|---------|-------------------|
+| **Overview** | always | KPI cards (total rows, dirty rows removed, number of plots, date of run). Render `report.html` in a `ui.tags.iframe` or `report.txt` in a `ui.tags.pre` block. | **Shiny only** — `ui.HTML`, `ui.tags.*`, `ui.output_ui` |
+| **Charts Gallery** | `charts/*.png` exist | Responsive image grid — encode each PNG as base64 inline. Group in rows of 3 using Bootstrap grid (`col-md-4`). | **Shiny only** — `ui.tags.img` with base64 src |
+| **Data Tables** | any `*.csv` or `*.parquet` | Tabbed sub-panels, one per file. Sorting and filtering enabled. | **Shiny only** — `ui.output_data_frame` / `render.DataGrid` |
+| **Statistics** | `summary_stats.csv` exists | Render the CSV as a styled DataGrid. Add a Plotly bar chart **only** for numeric KPI comparison where a chart genuinely adds over the table. | **Shiny** for table; **Plotly** for chart only if it adds value |
+| **Dirty Data** | `dirty.csv` exists | Show removed-rows count by reason as a bar chart; render full dirty table. | **Plotly** bar chart (no Shiny native equivalent) + **Shiny** DataGrid |
 
 ### PNG embedding helper
 

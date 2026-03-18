@@ -1,211 +1,193 @@
-# Research Plan — Medical Appointment No-Show EDA
+# Research Plan — Sales Order Analytics & Data Quality Report
 
 **Idea source:** _ideas/kaggle_ideas.md
 **Dataset(s):** data/data.csv
-**Date:** 2026-03-17
-
----
+**Date:** 2026-03-18
 
 ## 1. Research Question
 
-This project performs a comprehensive exploratory data analysis of a Brazilian public-health appointments dataset (110,527 records, Vitória municipality, Nov 2015 – Jun 2016) to understand **which patient and appointment factors drive no-shows**. The no-show rate is ~20.2%, creating a meaningful imbalance worth characterising. The outputs — charts, summary tables, and an HTML report — are designed for an internal technical audience and to prepare the researcher to answer a wide range of interview questions about the data.
-
-No predictive model is in scope; the goal is rigorous understanding, not prediction.
-
----
+Perform a comprehensive exploratory analysis of a 50-row sales order dataset covering January–May 2025 to uncover revenue trends, regional and product performance patterns, and data quality issues. The output is an interactive HTML report with supporting charts and CSVs, aimed at an internal technical review audience. The analysis should be rigorous enough to withstand interview-style questioning at all difficulty levels.
 
 ## 2. Dataset Summary
 
 | Column | Type | Missing % | Notes |
-|---|---|---|---|
-| PatientId | float64 | 0% | Unique patient ID; one patient may have multiple appointments |
-| AppointmentID | int64 | 0% | Unique appointment ID |
-| Gender | object | 0% | F (65%), M (35%) |
-| ScheduledDay | object→datetime | 0% | Timestamp with timezone; range Nov 2015 – Jun 2016 |
-| AppointmentDay | object→datetime | 0% | Date only; range Apr 2016 – Jun 2016 |
-| Age | int64 | 0% | 0–115; 1 negative value (-1), 7 values ≥ 100 |
-| Neighbourhood | object | 0% | 81 unique Brazilian neighbourhoods |
-| Scholarship | int64 | 0% | Bolsa Família welfare recipient (1=yes); 9.8% enrolled |
-| Hipertension | int64 | 0% | Hypertension flag; 19.7% positive |
-| Diabetes | int64 | 0% | Diabetes flag; 7.2% positive |
-| Alcoholism | int64 | 0% | Alcoholism flag; 3.0% positive |
-| Handcap | int64 | 0% | Disability level 0–4 (not purely binary); 1.7% non-zero |
-| SMS_received | int64 | 0% | SMS reminder sent (1=yes); 32.1% received |
-| No-show | object | 0% | **Target** — "Yes" = no-show (20.2%), "No" = attended (79.8%) |
+|--------|------|-----------|-------|
+| order_id | str | 0% | Unique identifier (ORD-001 to ORD-050), no duplicates |
+| date | str | 0% | Mostly YYYY-MM-DD; **one row uses DD-MM-YYYY** (ORD-027: "15-03-2025") |
+| customer_name | str | 0% | 26 unique customers |
+| customer_email | str | 2% | **1 missing value** |
+| region | str | 0% | 4 regions: North (13), South (13), East (12), West (12) |
+| product | str | 0% | 6 products, roughly evenly distributed (8–9 each) |
+| category | str | 0% | 4 categories: Software (17), Web Dev (16), Training (9), Consulting (8) |
+| quantity | int | 0% | Range 1–999; **ORD-047 has quantity=999** (likely data entry error) |
+| unit_price | float | 0% | Range -1200 to 2200; **ORD-049 has negative price** (-1200) |
+| discount_pct | int | 0% | Range 0–20% |
+| total | float | 0% | Range -1200 to 427,657.50; **ORD-047 total also fails validation** (off by ~585) |
+| sales_rep | str | 2% | 4 reps + **1 missing**; Sarah Mitchell (13), others ~12 each |
+| status | str | 0% | Completed (43), Pending (7) |
 
-**Key observations:**
-- Zero missing values across all columns — data is complete.
-- No duplicate rows.
-- `ScheduledDay` spans a much wider range than `AppointmentDay`; lead time (days between scheduling and appointment) is a derived feature of high interest.
-- `Handcap` has values 0–4; only 16 rows have value ≥ 2 (treat as binary 0/1+ for most analyses).
-- Class imbalance: 79.8% show vs 20.2% no-show.
-- **Dirty rows to remove:** 1 negative age, 7 ages > 115, 5 appointments scheduled after the appointment day → ~13 rows, saved to `output/PROJECT_XX/dirty.csv`.
+### Key Observations
 
----
+- **50 rows, 13 columns** — small dataset, well-suited for thorough manual inspection.
+- **3 dirty rows identified:**
+  1. **ORD-027** — date in DD-MM-YYYY format ("15-03-2025"), inconsistent with all other rows.
+  2. **ORD-047** — quantity = 999 (extreme outlier, likely data entry error); total also mismatches calculated value by ~585.
+  3. **ORD-049** — negative unit_price (-1200) and negative total (-1200).
+- **2 missing values:** 1 in `customer_email`, 1 in `sales_rep`.
+- **Revenue is heavily skewed** by the ORD-047 outlier (427K vs median ~1,915).
+- **Balanced distribution** across regions, products, and sales reps.
+- **7 pending orders** — may need separate treatment for revenue analysis (completed vs. pipeline).
 
 ## 3. Proposed Phases
 
-### Phase 0 — ETL & Cleaning
+### Phase 1 — Data Cleaning & ETL
 
-**Steps:**
-1. Load `data/kaggle.csv`.
-2. Parse `ScheduledDay` and `AppointmentDay` as datetime (strip timezone from ScheduledDay).
-3. Engineer `lead_days` = (`AppointmentDay` − `ScheduledDay.date()`).days.
-4. Identify dirty rows:
-   - `Age < 0` → reason: "negative age"
-   - `Age > 115` → reason: "age > 115"
-   - `lead_days < 0` → reason: "appointment before scheduled date"
-5. Save dirty rows with `reason` column to `output/PROJECT_XX/dirty.csv`.
-6. Drop dirty rows from working dataframe.
-7. Encode `No-show` as binary integer (`noshow_flag`: 1=yes, 0=no) for numeric aggregations.
-8. Save clean dataframe to `output/PROJECT_XX/clean.csv`.
+**Scripts:** `phase1_etl.py`
 
-**Output files:**
-- `output/PROJECT_XX/dirty.csv`
-- `output/PROJECT_XX/clean.csv`
+- Load `data/data.csv`
+- Parse dates: detect and normalise the DD-MM-YYYY entry to YYYY-MM-DD
+- Identify dirty rows using rules:
+  - Negative `unit_price` → dirty
+  - Extreme `quantity` (> reasonable threshold, e.g., > 50 for this business) → dirty
+  - `total` mismatch with `quantity * unit_price * (1 - discount_pct/100)` beyond ±0.01 → dirty
+- Remove dirty rows and save to `output/PROJECT_01/dirty.csv` with a `reason` column
+- Handle missing values: flag rows with missing `customer_email` or `sales_rep` (keep in analysis but note)
+- Add derived columns:
+  - `month` (YYYY-MM)
+  - `revenue` (validated total)
+  - `is_pending` (boolean from status)
+- Save clean dataset to `output/PROJECT_01/clean.csv`
 
----
+### Phase 2 — Exploratory Data Analysis & Feature Engineering
 
-### Phase 1 — Univariate EDA
+**Scripts:** `phase2_eda.py`
 
-**Goal:** Understand the distribution of every variable in isolation.
+Focus area: **Revenue & Trends** (primary), with secondary coverage of other dimensions.
 
-**Steps:**
-1. **Age distribution** — histogram (bins=20) with KDE; note infant (age=0) cluster and elderly tail.
-2. **Lead time distribution** — histogram of `lead_days`; note same-day appointments (lead=0) and long-wait outliers.
-3. **No-show rate overall** — bar chart showing 79.8% / 20.2% split.
-4. **Binary flags** — grouped bar chart showing prevalence of Scholarship, Hypertension, Diabetes, Alcoholism, Handicap, SMS_received.
-5. **Gender split** — pie or bar chart.
-6. **Neighbourhood counts** — horizontal bar chart of top 20 neighbourhoods by appointment volume.
-7. **Appointment day of week** — bar chart; extract from `AppointmentDay`.
-8. **Appointments over time** — line chart of daily appointment volume (April–June 2016).
+**Revenue & Trend Analysis:**
+- Monthly revenue trend (line chart)
+- Cumulative revenue over time
+- Month-over-month growth rate
+- Average order value by month
 
-**Output files:**
-- `output/PROJECT_XX/plots/01_age_distribution.png`
-- `output/PROJECT_XX/plots/02_lead_days_distribution.png`
-- `output/PROJECT_XX/plots/03_noshow_overall.png`
-- `output/PROJECT_XX/plots/04_binary_flags_prevalence.png`
-- `output/PROJECT_XX/plots/05_gender_split.png`
-- `output/PROJECT_XX/plots/06_top20_neighbourhoods.png`
-- `output/PROJECT_XX/plots/07_appointments_by_weekday.png`
-- `output/PROJECT_XX/plots/08_appointments_over_time.png`
+**Regional Analysis:**
+- Revenue by region (bar chart)
+- Order count by region
+- Average order value by region
 
----
+**Product & Category Analysis:**
+- Revenue by product and category (bar charts)
+- Quantity distribution by product
+- Discount patterns by category
 
-### Phase 2 — Bivariate EDA (No-Show Drivers)
+**Sales Rep Performance:**
+- Revenue per rep
+- Order count and average deal size per rep
+- Discount tendencies per rep
 
-**Goal:** Identify which factors are associated with higher/lower no-show rates.
+**Customer Analysis:**
+- Top customers by revenue
+- Repeat customers vs. one-time buyers
+- Customer concentration (% revenue from top N customers)
 
-**Steps:**
-1. **No-show rate by Gender** — grouped bar chart.
-2. **No-show rate by Age group** — bin age into 0–10, 11–20, …, 80+; bar chart of no-show rate per bin.
-3. **No-show rate by Lead time bucket** — bin lead_days: 0, 1–7, 8–30, 31–90, 90+; bar chart.
-4. **No-show rate by SMS received** — bar chart; note the counterintuitive expected result (SMS correlates with no-show due to selection bias).
-5. **No-show rate by each binary condition** — faceted bar chart for Scholarship, Hypertension, Diabetes, Alcoholism, Handicap.
-6. **No-show rate by Day of Week** — bar chart; expect higher no-shows on Fridays/Mondays.
-7. **No-show rate by Neighbourhood** — horizontal bar chart (top 30 by volume, coloured by rate); identify high-risk neighbourhoods.
-8. **No-show rate by Month** — aggregate by appointment month.
-9. **Repeat patient behaviour** — compute per-patient appointment count and prior no-show rate; plot relationship between past no-show history and current appointment outcome.
-10. **Correlation heatmap** — numeric columns (age, lead_days, binary flags) vs noshow_flag; seaborn heatmap.
+**Status Analysis:**
+- Completed vs. Pending breakdown
+- Pending orders by region/product
 
-**Output files:**
-- `output/PROJECT_XX/plots/09_noshow_by_gender.png`
-- `output/PROJECT_XX/plots/10_noshow_by_age_group.png`
-- `output/PROJECT_XX/plots/11_noshow_by_lead_days.png`
-- `output/PROJECT_XX/plots/12_noshow_by_sms.png`
-- `output/PROJECT_XX/plots/13_noshow_by_conditions.png`
-- `output/PROJECT_XX/plots/14_noshow_by_weekday.png`
-- `output/PROJECT_XX/plots/15_noshow_by_neighbourhood.png`
-- `output/PROJECT_XX/plots/16_noshow_by_month.png`
-- `output/PROJECT_XX/plots/17_repeat_patient_noshow.png`
-- `output/PROJECT_XX/plots/18_correlation_heatmap.png`
+**Output:** Summary statistics CSV (`output/PROJECT_01/summary_stats.csv`)
 
----
+### Phase 3 — Visualisations
 
-### Phase 3 — Multivariate & Deep-Dive Analyses
+**Scripts:** `phase3_charts.py`
 
-**Goal:** Answer the harder interview-style questions about the data.
+Use **Plotly** for interactive charts saved as standalone HTML snippets and static PNGs:
 
-**Steps:**
-1. **SMS paradox deep-dive** — cross-tabulate SMS × lead_days × no-show to explain why SMS recipients show *higher* no-show rates (they are more likely given to high-lead-time appointments).
-2. **Age × Condition interactions** — pivot table of no-show rate by age group × hypertension; are older hypertensive patients more reliable?
-3. **Neighbourhood inequality** — compute Gini coefficient of no-show rate across neighbourhoods; identify top-3 highest and lowest no-show-rate neighbourhoods.
-4. **Same-day appointments** — isolate lead_days=0 subset; profile who books same-day (age, conditions, no-show rate).
-5. **Scholarship (welfare) analysis** — compare no-show rates for Bolsa Família recipients vs non-recipients, stratified by neighbourhood poverty proxy (appointment volume as proxy).
-6. **Patient-level vs appointment-level analysis** — aggregate to patient level; plot distribution of number of appointments per patient; identify frequent fliers.
-7. **Time-series anomaly** — are there specific weeks with unusually high no-shows? (e.g. public holidays, extreme weather).
+1. **Monthly Revenue Trend** — line chart with markers, hover showing order count
+2. **Revenue by Region** — horizontal bar chart
+3. **Revenue by Category** — stacked bar or treemap
+4. **Revenue by Product** — bar chart
+5. **Sales Rep Performance** — grouped bar (revenue + order count)
+6. **Top 10 Customers by Revenue** — horizontal bar
+7. **Discount Distribution** — histogram
+8. **Order Status Breakdown** — pie/donut chart
+9. **Revenue Heatmap** — region × category matrix
+10. **Cumulative Revenue Over Time** — area chart
 
-**Output files:**
-- `output/PROJECT_XX/plots/19_sms_paradox.png`
-- `output/PROJECT_XX/plots/20_age_condition_heatmap.png`
-- `output/PROJECT_XX/plots/21_neighbourhood_inequality.png`
-- `output/PROJECT_XX/plots/22_same_day_profile.png`
-- `output/PROJECT_XX/plots/23_scholarship_analysis.png`
-- `output/PROJECT_XX/plots/24_patient_appointment_counts.png`
-- `output/PROJECT_XX/plots/25_weekly_noshow_timeseries.png`
-- `output/PROJECT_XX/summary_stats.csv`
+All charts saved to `output/PROJECT_01/charts/` as both `.html` (interactive) and `.png` (static).
 
----
+### Phase 4 — HTML Report & Interview Preparation
 
-### Phase 4 — HTML Report
+**Scripts:** `phase4_report.py`
 
-**Goal:** Compile all findings into a single self-contained HTML report.
+Assemble a single interactive HTML report (`output/PROJECT_01/report.html`) containing:
 
-**Steps:**
-1. Use `jinja2` (or `pandas` + inline HTML) to generate an HTML report that:
-   - Summarises the dataset (shape, cleaning decisions)
-   - Embeds all plots as base64 PNG images (no external dependencies)
-   - Includes an executive summary section with 5–8 key findings in plain language
-   - Includes a "Hard Interview Questions" appendix with Q&A pairs covering:
-     - Why does SMS_received correlate positively with no-shows?
-     - What is the effect of lead time on attendance?
-     - Which patient segments are highest risk?
-     - How would you build a no-show prediction model from this data?
-     - What are the ethical considerations of using neighbourhood or scholarship status?
-     - What are the limitations of this dataset?
-2. Save as `output/PROJECT_XX/report.html`.
+1. **Executive Summary** — key metrics (total revenue, order count, average order value, top region, top product)
+2. **Data Quality Section** — dirty rows found, cleaning decisions, missing values
+3. **Revenue & Trends** — embedded interactive charts, commentary
+4. **Regional & Product Breakdown** — charts with insights
+5. **Sales Rep Analysis** — performance comparison
+6. **Customer Insights** — concentration, repeat buyers
+7. **Interview-Ready Insights** — a section with 10–15 pre-prepared talking points covering:
+   - Easy: "What is the total revenue?" / "How many orders were placed?"
+   - Medium: "Which region has the highest average order value?" / "What is the MoM growth trend?"
+   - Hard: "How would you handle the outlier in ORD-047?" / "What does the customer concentration risk look like?" / "If you could only keep 3 charts, which and why?"
 
-**Output files:**
-- `output/PROJECT_XX/report.html`
+### Output File Manifest
 
----
+```
+output/PROJECT_01/
+├── dirty.csv                  # Removed rows with reason column
+├── clean.csv                  # Cleaned dataset
+├── summary_stats.csv          # Key statistics
+├── charts/
+│   ├── monthly_revenue.html
+│   ├── monthly_revenue.png
+│   ├── revenue_by_region.html
+│   ├── revenue_by_region.png
+│   ├── revenue_by_category.html
+│   ├── revenue_by_category.png
+│   ├── revenue_by_product.html
+│   ├── revenue_by_product.png
+│   ├── sales_rep_performance.html
+│   ├── sales_rep_performance.png
+│   ├── top_customers.html
+│   ├── top_customers.png
+│   ├── discount_distribution.html
+│   ├── discount_distribution.png
+│   ├── order_status.html
+│   ├── order_status.png
+│   ├── revenue_heatmap.html
+│   ├── revenue_heatmap.png
+│   ├── cumulative_revenue.html
+│   └── cumulative_revenue.png
+└── report.html                # Full interactive HTML report
+```
 
 ## 4. Open Questions / Assumptions
 
-- **Assumption:** `ScheduledDay` timestamp represents the exact moment the appointment was booked; timezone stripped for lead-time calculation.
-- **Assumption:** `Handcap` values 2, 3, 4 (n=199) are treated as "disabled" (=1) for binary analyses; the multi-level nature is noted but not deeply analysed given tiny sample sizes.
-- **Assumption:** Age=0 is valid (infants/neonates) and is retained.
-- **Open question:** Are `PatientId` values stable across appointments? (float64 type is unusual — may be a precision artefact from the source system.) This is noted but not corrected.
-- **Open question:** The dataset covers only one Brazilian city (Vitória, Espírito Santo). Generalisability to other contexts is limited.
-
----
+- **Assumption:** ORD-047 (quantity=999) is a data entry error, not a legitimate bulk order. Removed as dirty.
+- **Assumption:** ORD-049 (negative price) is an error or refund — removed as dirty rather than treated as a credit note.
+- **Assumption:** The inconsistent date format on ORD-027 is a one-off typo; the date itself (15-Mar-2025) is valid after parsing.
+- **Assumption:** "Pending" orders represent real pipeline — included in order counts but flagged separately for revenue analysis.
+- **Assumption:** Missing `customer_email` and `sales_rep` are not grounds for row removal — these rows remain in the clean dataset.
 
 ## 5. Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Negative age (-1) | Removed; saved to dirty.csv with reason "negative age" |
-| Ages > 115 (7 rows) | Removed; likely data entry errors |
-| Appointments before scheduled date (5 rows) | Removed; lead_days < 0 is impossible |
-| SMS selection bias misleading narrative | Explicitly analysed in Phase 3 SMS paradox section |
-| Neighbourhood encoding (81 categories) | Used for visualisation only; no one-hot encoding required for EDA |
-| Class imbalance (80/20) | Noted prominently; not a concern for pure EDA but flagged for any future modelling |
-| `ScheduledDay` timezone | Stripped before lead-time calculation to avoid off-by-one errors |
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| Small dataset (50 rows) limits statistical significance | High | Medium | Acknowledge limitations; avoid over-fitting conclusions; use descriptive stats, not inferential |
+| Outlier removal changes revenue picture dramatically | Medium | High | Report both with/without outlier totals; document cleaning rationale |
+| Mixed date formats cause silent parsing errors | Low | High | Explicit format detection and validation in ETL; assert all dates parse successfully |
+| Total column has calculation errors beyond known dirty rows | Low | Medium | Recalculate and validate every row's total in ETL; flag any discrepancy |
+| Interview questions may target edge cases not in data | Medium | Low | Include "what-if" discussion points in report (e.g., "what would you do with 10K rows?") |
 
----
+## 6. Technical Spec Guidance
 
-## 6. Technical Spec Notes (for `/spec`)
+The `/spec` phase should produce scripts for each phase above with:
 
-The spec should define these scripts in `src/`:
+- **phase1_etl.py** — Pandas-based cleaning, validation, derived columns, dirty.csv export
+- **phase2_eda.py** — Statistical summaries, groupby aggregations, output to CSV
+- **phase3_charts.py** — Plotly chart generation (10 charts, HTML + PNG)
+- **phase4_report.py** — Jinja2 or string-templated HTML assembly, embedding charts and stats
 
-| Script | Phase | Purpose |
-|---|---|---|
-| `phase0_etl.py` | 0 | Load, clean, engineer features, save dirty.csv + clean.csv |
-| `phase1_univariate.py` | 1 | Generate plots 01–08 |
-| `phase2_bivariate.py` | 2 | Generate plots 09–18 + summary_stats.csv |
-| `phase3_multivariate.py` | 3 | Generate plots 19–25 |
-| `phase4_report.py` | 4 | Compile HTML report with embedded plots |
-
-All scripts read from `output/PROJECT_XX/clean.csv` (except phase0 which reads raw data).
-All plots use `matplotlib`/`seaborn` with a consistent style (e.g. `seaborn-v0_8-whitegrid`).
-Report uses `jinja2` with base64-encoded plot embeds.
+Dependencies: `pandas`, `plotly`, `kaleido` (for PNG export), `jinja2` (optional for report templating)

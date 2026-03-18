@@ -30,37 +30,39 @@ from pathlib import Path
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
 
 
 # ANSI color codes
-CYAN    = "\033[36m"
-GREEN   = "\033[32m"
-YELLOW  = "\033[33m"
-RED     = "\033[31m"
-BLUE    = "\033[34m"
+CYAN = "\033[36m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+RED = "\033[31m"
+BLUE = "\033[34m"
 MAGENTA = "\033[35m"
-DIM     = "\033[90m"
-RESET   = "\033[0m"
+DIM = "\033[90m"
+RESET = "\033[0m"
 
 RECYCLE = "\u267b"
 
 SESSION_TIMES_FILE = Path.home() / ".claude" / "session_times.json"
-STATS_FILE         = Path.home() / ".claude" / "stats-cache.json"
-PROJECTS_DIR       = Path.home() / ".claude" / "projects"
+STATS_FILE = Path.home() / ".claude" / "stats-cache.json"
+PROJECTS_DIR = Path.home() / ".claude" / "projects"
 
 SESSION_HOURS = 5
 
 # Limits — override via env vars
 DEFAULT_SESSION_LIMIT = int(os.environ.get("CLAUDE_SESSION_LIMIT", "40000000"))
-DEFAULT_WEEKLY_LIMIT  = int(os.environ.get("CLAUDE_WEEKLY_LIMIT",  "10000000"))
+DEFAULT_WEEKLY_LIMIT = int(os.environ.get("CLAUDE_WEEKLY_LIMIT", "10000000"))
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def get_session_start_time(session_id):
     SESSION_TIMES_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -100,21 +102,28 @@ def format_elapsed(start_time):
 
 def duration_color(start_time):
     mins = (datetime.now() - start_time).total_seconds() / 60
-    if mins < 30:   return GREEN
-    if mins < 60:   return YELLOW
-    if mins < 120:  return MAGENTA
+    if mins < 30:
+        return GREEN
+    if mins < 60:
+        return YELLOW
+    if mins < 120:
+        return MAGENTA
     return RED
 
 
 def fmt_tokens(n):
-    if n >= 1_000_000: return f"{n/1_000_000:.1f}M"
-    if n >= 1_000:     return f"{n/1_000:.1f}k"
+    if n >= 1_000_000:
+        return f"{n/1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n/1_000:.1f}k"
     return str(n)
 
 
 def pct_color(pct):
-    if pct < 50: return GREEN
-    if pct < 80: return YELLOW
+    if pct < 50:
+        return GREEN
+    if pct < 80:
+        return YELLOW
     return RED
 
 
@@ -132,7 +141,9 @@ def get_git_branch():
     try:
         r = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True, timeout=2,
+            capture_output=True,
+            text=True,
+            timeout=2,
         )
         if r.returncode == 0:
             return r.stdout.strip()
@@ -149,8 +160,7 @@ def get_cost(input_data):
             with open(STATS_FILE) as f:
                 stats = json.load(f)
             cost = sum(
-                m.get("costUSD", 0)
-                for m in stats.get("modelUsage", {}).values()
+                m.get("costUSD", 0) for m in stats.get("modelUsage", {}).values()
             )
         except Exception:
             pass
@@ -160,6 +170,7 @@ def get_cost(input_data):
 # ---------------------------------------------------------------------------
 # Session window token counting (last 5 hours from project JSONL files)
 # ---------------------------------------------------------------------------
+
 
 def _tail_tokens_from_file(filepath: Path, cutoff_ts: str) -> int:
     """
@@ -255,23 +266,23 @@ def get_session_stats():
         pass
 
     limit = DEFAULT_SESSION_LIMIT
-    pct   = min(100.0, total_tokens / limit * 100) if limit > 0 else 0.0
+    pct = min(100.0, total_tokens / limit * 100) if limit > 0 else 0.0
 
     # Approximate time remaining in current 5-hour block (aligned to midnight UTC)
     # Block boundaries: 0h, 5h, 10h, 15h, 20h UTC
-    hour_utc      = now.utctimetuple().tm_hour
+    hour_utc = now.utctimetuple().tm_hour
     block_start_h = (hour_utc // SESSION_HOURS) * SESSION_HOURS
-    block_end      = now.replace(
+    block_end = now.replace(
         hour=block_start_h, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
     ).replace(tzinfo=None) + timedelta(hours=SESSION_HOURS)
     # Convert block_end to local naive time for display
     # (approximate: add UTC offset crudely via timestamp diff)
-    utc_offset_s  = -datetime.now(timezone.utc).utcoffset().total_seconds() * -1
+    utc_offset_s = -datetime.now(timezone.utc).utcoffset().total_seconds() * -1
     block_end_local = block_end + timedelta(seconds=utc_offset_s)
-    remaining_s   = (block_end_local - now).total_seconds()
+    remaining_s = (block_end_local - now).total_seconds()
     if remaining_s < 0:
         remaining_s += SESSION_HOURS * 3600
-    remaining_m   = int(remaining_s / 60)
+    remaining_m = int(remaining_s / 60)
     if remaining_m >= 60:
         time_str = f"~{remaining_m // 60}h {remaining_m % 60}m"
     else:
@@ -284,13 +295,14 @@ def get_session_stats():
 # Weekly stats (from stats-cache.json)
 # ---------------------------------------------------------------------------
 
+
 def get_weekly_stats():
     """Return (weekly_pct, weekly_tokens, weekly_limit, reset_str)."""
     weekly_tokens = 0
     try:
         with open(STATS_FILE) as f:
             stats = json.load(f)
-        today      = datetime.now().date()
+        today = datetime.now().date()
         week_start = today - timedelta(days=today.weekday())
         for entry in stats.get("dailyModelTokens", []):
             entry_date = datetime.strptime(entry["date"], "%Y-%m-%d").date()
@@ -301,11 +313,11 @@ def get_weekly_stats():
         pass
 
     limit = DEFAULT_WEEKLY_LIMIT
-    pct   = min(100.0, weekly_tokens / limit * 100) if limit > 0 else 0.0
+    pct = min(100.0, weekly_tokens / limit * 100) if limit > 0 else 0.0
 
-    today          = datetime.now()
+    today = datetime.now()
     days_to_monday = (7 - today.weekday()) % 7 or 7
-    reset          = (today + timedelta(days=days_to_monday)).strftime("%a")
+    reset = (today + timedelta(days=days_to_monday)).strftime("%a")
 
     return pct, weekly_tokens, limit, reset
 
@@ -324,25 +336,26 @@ def usage_row(label, dot_bar, pct, col, recycle_label):
 # Main status generator
 # ---------------------------------------------------------------------------
 
+
 def generate_status_line(input_data):
     model_name = input_data.get("model", {}).get("display_name", "Claude")
     session_id = input_data.get("session_id", "default")
 
     # Context window
-    ctx_pct   = None
+    ctx_pct = None
     remaining = None
     cw = input_data.get("context_window", {})
     if cw:
-        raw_pct  = cw.get("used_percentage", 0) or 0
+        raw_pct = cw.get("used_percentage", 0) or 0
         ctx_size = cw.get("context_window_size", 200000) or 200000
         if raw_pct:
-            ctx_pct   = raw_pct
+            ctx_pct = raw_pct
             remaining = int(ctx_size * (100 - raw_pct) / 100)
 
     # Session timing (for line 1 elapsed)
-    start_time  = get_session_start_time(session_id)
+    start_time = get_session_start_time(session_id)
     elapsed_str = format_elapsed(start_time)
-    dur_col     = duration_color(start_time)
+    dur_col = duration_color(start_time)
 
     # Session window & weekly stats
     sess_pct, sess_tok, sess_limit, sess_reset = get_session_stats()
@@ -350,18 +363,18 @@ def generate_status_line(input_data):
 
     # Git branch & cost
     branch = get_git_branch()
-    cost   = get_cost(input_data)
+    cost = get_cost(input_data)
 
     # ── Line 1 ──────────────────────────────────────────────────────────────
     if ctx_pct is not None:
-        dots1     = ctx_pct // 10
-        col1      = pct_color(ctx_pct)
-        pct_part  = f" {col1}{ctx_pct:.1f}%{RESET}"
+        dots1 = ctx_pct // 10
+        col1 = pct_color(ctx_pct)
+        pct_part = f" {col1}{ctx_pct:.1f}%{RESET}"
         left_part = f" {BLUE}~{fmt_tokens(remaining)} left{RESET}" if remaining else ""
     else:
         elapsed_mins = (datetime.now() - start_time).total_seconds() / 60
-        dots1     = min(10, int(elapsed_mins / 6))
-        pct_part  = ""
+        dots1 = min(10, int(elapsed_mins / 6))
+        pct_part = ""
         left_part = ""
 
     line1_parts = [f"{CYAN}{model_name}{RESET}"]
@@ -383,7 +396,7 @@ def generate_status_line(input_data):
         make_dot_bar(sess_pct // 10),
         sess_pct,
         sess_col,
-        f"{sess_col}{sess_reset}{RESET}  {DIM}{fmt_tokens(sess_tok)}/{fmt_tokens(sess_limit)}{RESET}",
+        f"Time left: {sess_col}{sess_reset}{RESET}  Used: {DIM}{fmt_tokens(sess_tok)}/{fmt_tokens(sess_limit)}{RESET}",
     )
 
     # ── Line 3: weekly ─────────────────────────────────────────────────────
@@ -402,6 +415,7 @@ def generate_status_line(input_data):
 # Entry point
 # ---------------------------------------------------------------------------
 
+
 def main():
     try:
         if hasattr(sys.stdout, "reconfigure"):
@@ -409,7 +423,7 @@ def main():
         if hasattr(sys.stdin, "reconfigure"):
             sys.stdin.reconfigure(encoding="utf-8")
 
-        input_data  = json.loads(sys.stdin.read())
+        input_data = json.loads(sys.stdin.read())
         status_line = generate_status_line(input_data)
         print(status_line)
         sys.exit(0)
