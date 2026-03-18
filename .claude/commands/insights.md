@@ -121,10 +121,14 @@ ultrathink
 
 ### 4c. Write the individual insight file
 
-Save to `INSIGHTS_FOLDER/insights_<image_name_without_extension>.md`:
+Save to `INSIGHTS_FOLDER/insights_<image_name_without_extension>.md`.
+
+**Image embed:** Each individual insight file MUST include the corresponding image as a Markdown image link. Compute the relative path from `INSIGHTS_FOLDER` to the image file. For example, if `INSIGHTS_FOLDER` is `output/PROJECT_01/insights` and the image is at `output/PROJECT_01/plots/01_age_distribution.jpg`, the relative path is `../plots/01_age_distribution.jpg`.
 
 ```markdown
 # Insight Report: <image_filename>
+
+![image](<relative_path_from_INSIGHTS_FOLDER_to_image_file>)
 
 **Chart type:** [e.g., Bar chart, Heatmap, Time series, etc.]
 **Variables displayed:** [What's on each axis / what's being measured]
