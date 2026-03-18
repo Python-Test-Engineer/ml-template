@@ -1,158 +1,109 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "python-dotenv",
-# ]
-# ///
+#!/usr/bin/env python3
+"""
+Claude Code Status Line - Usage Display
+Shows context usage, token counts, cost, and model info.
+
+Install:
+  chmod +x ~/.claude/statusline.py
+
+Add to ~/.claude/settings.json:
+  {
+    "statusLine": {
+      "type": "command",
+      "command": "~/.claude/statusline.py"
+    }
+  }
+"""
 
 import json
-import os
 import sys
-from pathlib import Path
-from datetime import datetime
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass  # dotenv is optional
 
 
-def log_status_line(input_data, status_line_output, error_message=None):
-    """Log status line event to logs directory."""
-    # Ensure logs directory exists
-    log_dir = Path("logs")
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / 'status_line.json'
-    
-    # Read existing log data or initialize empty list
-    if log_file.exists():
-        with open(log_file, 'r') as f:
-            try:
-                log_data = json.load(f)
-            except (json.JSONDecodeError, ValueError):
-                log_data = []
+def make_bar(pct: float, width: int = 10) -> str:
+    filled = round(pct / 100 * width)
+    return "▓" * filled + "░" * (width - filled)
+
+
+def color(text: str, pct: float) -> str:
+    if pct >= 80:
+        code = "\033[31m"   # Red
+    elif pct >= 50:
+        code = "\033[33m"   # Yellow
     else:
-        log_data = []
-    
-    # Create log entry with input data and generated output
-    log_entry = {
-        "timestamp": datetime.now().isoformat(),
-        "version": "v2",
-        "input_data": input_data,
-        "status_line_output": status_line_output,
-    }
-    
-    if error_message:
-        log_entry["error"] = error_message
-    
-    # Append the log entry
-    log_data.append(log_entry)
-    
-    # Write back to file with formatting
-    with open(log_file, 'w') as f:
-        json.dump(log_data, f, indent=2)
+        code = "\033[32m"   # Green
+    return f"{code}{text}\033[0m"
 
 
-def get_last_prompt(session_id):
-    """Get the last prompt for the current session."""
-    # Use the JSON structure
-    session_file = Path(f".claude/data/sessions/{session_id}.json")
-    
-    if not session_file.exists():
-        return None, f"Session file {session_file} does not exist"
-    
-    try:
-        with open(session_file, 'r') as f:
-            session_data = json.load(f)
-            prompts = session_data.get("prompts", [])
-            if prompts:
-                return prompts[-1], None
-            return None, "No prompts in session"
-    except Exception as e:
-        return None, f"Error reading session file: {str(e)}"
-
-
-def generate_status_line(input_data):
-    """Generate the status line showing the last prompt."""
-    # Extract session ID from input data
-    session_id = input_data.get('session_id', 'unknown')
-    
-    # Get model name for prefix
-    model_info = input_data.get('model', {})
-    model_name = model_info.get('display_name', 'Claude')
-    
-    # Get the last prompt
-    prompt, error = get_last_prompt(session_id)
-    
-    if error:
-        # Log the error but show a default message
-        log_status_line(input_data, f"[{model_name}] 💭 No recent prompt", error)
-        return f"\033[36m[{model_name}]\033[0m \033[90m💭 No recent prompt\033[0m"
-    
-    # Format the prompt for status line
-    # Remove newlines and excessive whitespace
-    prompt = ' '.join(prompt.split())
-    
-    # Color coding based on prompt type
-    if prompt.startswith('/'):
-        # Command prompt - yellow
-        prompt_color = "\033[33m"
-        icon = "⚡"
-    elif '?' in prompt:
-        # Question - blue
-        prompt_color = "\033[34m"
-        icon = "❓"
-    elif any(word in prompt.lower() for word in ['create', 'write', 'add', 'implement', 'build']):
-        # Creation task - green
-        prompt_color = "\033[32m"
-        icon = "💡"
-    elif any(word in prompt.lower() for word in ['fix', 'debug', 'error', 'issue']):
-        # Fix/debug task - red
-        prompt_color = "\033[31m"
-        icon = "🐛"
-    elif any(word in prompt.lower() for word in ['refactor', 'improve', 'optimize']):
-        # Refactor task - magenta
-        prompt_color = "\033[35m"
-        icon = "♻️"
-    else:
-        # Default - white
-        prompt_color = "\033[37m"
-        icon = "💬"
-    
-    # Construct the status line
-    status_line = f"\033[36m[{model_name}]\033[0m {icon} {prompt_color}{prompt}\033[0m"
-    
-    return status_line
+def fmt_tokens(n: int) -> str:
+    if n >= 1_000_000:
+        return f"{n/1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n/1_000:.0f}K"
+    return str(n)
 
 
 def main():
     try:
-        # Read JSON input from stdin
-        input_data = json.loads(sys.stdin.read())
-        
-        # Generate status line
-        status_line = generate_status_line(input_data)
-        
-        # Log the status line event (without error since it's successful)
-        log_status_line(input_data, status_line)
-        
-        # Output the status line (first line of stdout becomes the status line)
-        print(status_line)
-        
-        # Success
-        sys.exit(0)
-        
-    except json.JSONDecodeError:
-        # Handle JSON decode errors gracefully - output basic status
-        print("\033[31m[Claude] 💭 JSON Error\033[0m")
-        sys.exit(0)
-    except Exception as e:
-        # Handle any other errors gracefully - output basic status
-        print(f"\033[31m[Claude] 💭 Error: {str(e)}\033[0m")
-        sys.exit(0)
+        data = json.loads(sys.stdin.read())
+    except (json.JSONDecodeError, ValueError):
+        print("⚠ No data")
+        return
+
+    # ── Model ──────────────────────────────────────────────
+    model_raw = (
+        data.get("model", {}).get("api_model_id", "")
+        or data.get("model", {}).get("name", "")
+    )
+    if "opus" in model_raw.lower():
+        model_label = "Opus"
+    elif "sonnet" in model_raw.lower():
+        model_label = "Sonnet"
+    elif "haiku" in model_raw.lower():
+        model_label = "Haiku"
+    else:
+        model_label = model_raw.split("-")[1].capitalize() if "-" in model_raw else (model_raw or "?")
+
+    # ── Context window ─────────────────────────────────────
+    ctx = data.get("context_window", {})
+    window_size = ctx.get("context_window_size", 0)
+    usage = ctx.get("current_usage") or {}
+
+    input_tok   = usage.get("input_tokens", 0)
+    output_tok  = usage.get("output_tokens", 0)
+    cache_write = usage.get("cache_creation_input_tokens", 0)
+    cache_read  = usage.get("cache_read_input_tokens", 0)
+
+    used_input = input_tok + cache_write + cache_read
+    pct = (used_input / window_size * 100) if window_size else 0
+
+    bar = make_bar(pct)
+    pct_str = color(f"{pct:5.1f}%", pct)
+    bar_str = color(bar, pct)
+
+    used_str  = fmt_tokens(used_input)
+    total_str = fmt_tokens(window_size)
+
+    # ── Cost ───────────────────────────────────────────────
+    cost_usd = data.get("cost", {}).get("total_cost_usd", 0) or 0
+    cost_str = f"${cost_usd:.4f}" if cost_usd else ""
+
+    # ── Assemble line ──────────────────────────────────────
+    parts = [f"🤖 {model_label}"]
+
+    if window_size:
+        parts.append(f"{bar_str} {pct_str} ({used_str}/{total_str})")
+    
+    if output_tok:
+        parts.append(f"out:{fmt_tokens(output_tok)}")
+
+    if cache_read:
+        parts.append(f"💾 cache:{fmt_tokens(cache_read)}")
+
+    if cost_str:
+        parts.append(f"💰 {cost_str}")
+
+    print("  |  ".join(parts))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

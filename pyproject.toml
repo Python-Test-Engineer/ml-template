@@ -1,7 +1,7 @@
 [project]
-name = "neuroblastoma-genomic-analysis"
+name = "data"
 version = "0.1.0"
-description = "Multi-phase oncology data science project predicting neuroblastoma patient outcomes from gene expression and clinical data."
+description = "Data Intelligence Research Agent"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
