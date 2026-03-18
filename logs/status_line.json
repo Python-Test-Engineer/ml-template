@@ -1,0 +1,387 @@
+[
+  {
+    "timestamp": "2026-03-18T12:12:47.231145",
+    "input_data": {
+      "session_id": "26fd8192-3be0-4cff-b7e5-baf7361f8e11",
+      "transcript_path": "C:\\Users\\mrcra\\.claude\\projects\\C--Users-mrcra-Desktop-data-intelligence-researcher\\26fd8192-3be0-4cff-b7e5-baf7361f8e11.jsonl",
+      "cwd": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+      "model": {
+        "id": "claude-opus-4-6",
+        "display_name": "Opus 4.6"
+      },
+      "workspace": {
+        "current_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "project_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "added_dirs": []
+      },
+      "version": "2.1.78",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 0,
+        "total_duration_ms": 935,
+        "total_api_duration_ms": 0,
+        "total_lines_added": 0,
+        "total_lines_removed": 0
+      },
+      "context_window": {
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
+        "context_window_size": 200000,
+        "current_usage": null,
+        "used_percentage": null,
+        "remaining_percentage": null
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Opus 4.6]\u001b[0m | \u001b[34m\ud83d\udcc1 data-intelligence-researcher\u001b[0m | \u001b[32m\ud83c\udf3f main \u00b11\u001b[0m | \u001b[90mv2.1.78\u001b[0m"
+  },
+  {
+    "timestamp": "2026-03-18T12:12:55.817743",
+    "input_data": {
+      "session_id": "26fd8192-3be0-4cff-b7e5-baf7361f8e11",
+      "transcript_path": "C:\\Users\\mrcra\\.claude\\projects\\C--Users-mrcra-Desktop-data-intelligence-researcher\\26fd8192-3be0-4cff-b7e5-baf7361f8e11.jsonl",
+      "cwd": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+      "model": {
+        "id": "claude-opus-4-6",
+        "display_name": "Opus 4.6"
+      },
+      "workspace": {
+        "current_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "project_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "added_dirs": []
+      },
+      "version": "2.1.78",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 0.1075025,
+        "total_duration_ms": 10606,
+        "total_api_duration_ms": 3756,
+        "total_lines_added": 0,
+        "total_lines_removed": 0
+      },
+      "context_window": {
+        "total_input_tokens": 3,
+        "total_output_tokens": 33,
+        "context_window_size": 200000,
+        "current_usage": {
+          "input_tokens": 3,
+          "output_tokens": 33,
+          "cache_creation_input_tokens": 17066,
+          "cache_read_input_tokens": 0
+        },
+        "used_percentage": 9,
+        "remaining_percentage": 91
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Opus 4.6]\u001b[0m | \u001b[34m\ud83d\udcc1 data-intelligence-researcher\u001b[0m | \u001b[32m\ud83c\udf3f main \u00b12\u001b[0m | \u001b[90mv2.1.78\u001b[0m"
+  },
+  {
+    "timestamp": "2026-03-18T12:13:49.071410",
+    "version": "v2",
+    "input_data": {
+      "session_id": "26fd8192-3be0-4cff-b7e5-baf7361f8e11",
+      "transcript_path": "C:\\Users\\mrcra\\.claude\\projects\\C--Users-mrcra-Desktop-data-intelligence-researcher\\26fd8192-3be0-4cff-b7e5-baf7361f8e11.jsonl",
+      "cwd": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+      "model": {
+        "id": "claude-opus-4-6",
+        "display_name": "Opus 4.6"
+      },
+      "workspace": {
+        "current_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "project_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "added_dirs": []
+      },
+      "version": "2.1.78",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 0.1075025,
+        "total_duration_ms": 63931,
+        "total_api_duration_ms": 3756,
+        "total_lines_added": 0,
+        "total_lines_removed": 0
+      },
+      "context_window": {
+        "total_input_tokens": 3,
+        "total_output_tokens": 33,
+        "context_window_size": 200000,
+        "current_usage": {
+          "input_tokens": 3,
+          "output_tokens": 33,
+          "cache_creation_input_tokens": 17066,
+          "cache_read_input_tokens": 0
+        },
+        "used_percentage": 9,
+        "remaining_percentage": 91
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "[Opus 4.6] \ud83d\udcad No recent prompt",
+    "error": "Session file .claude\\data\\sessions\\26fd8192-3be0-4cff-b7e5-baf7361f8e11.json does not exist"
+  },
+  {
+    "timestamp": "2026-03-18T12:13:49.087757",
+    "version": "v2",
+    "input_data": {
+      "session_id": "26fd8192-3be0-4cff-b7e5-baf7361f8e11",
+      "transcript_path": "C:\\Users\\mrcra\\.claude\\projects\\C--Users-mrcra-Desktop-data-intelligence-researcher\\26fd8192-3be0-4cff-b7e5-baf7361f8e11.jsonl",
+      "cwd": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+      "model": {
+        "id": "claude-opus-4-6",
+        "display_name": "Opus 4.6"
+      },
+      "workspace": {
+        "current_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "project_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "added_dirs": []
+      },
+      "version": "2.1.78",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 0.1075025,
+        "total_duration_ms": 63931,
+        "total_api_duration_ms": 3756,
+        "total_lines_added": 0,
+        "total_lines_removed": 0
+      },
+      "context_window": {
+        "total_input_tokens": 3,
+        "total_output_tokens": 33,
+        "context_window_size": 200000,
+        "current_usage": {
+          "input_tokens": 3,
+          "output_tokens": 33,
+          "cache_creation_input_tokens": 17066,
+          "cache_read_input_tokens": 0
+        },
+        "used_percentage": 9,
+        "remaining_percentage": 91
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Opus 4.6]\u001b[0m \u001b[90m\ud83d\udcad No recent prompt\u001b[0m"
+  },
+  {
+    "timestamp": "2026-03-18T12:34:32.361755",
+    "input_data": {
+      "session_id": "2a77006e-b26c-409a-9c87-6fcffcddd4e1",
+      "transcript_path": "C:\\Users\\mrcra\\.claude\\projects\\C--Users-mrcra-Desktop-data-intelligence-researcher\\2a77006e-b26c-409a-9c87-6fcffcddd4e1.jsonl",
+      "cwd": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+      "model": {
+        "id": "claude-sonnet-4-6",
+        "display_name": "Sonnet 4.6"
+      },
+      "workspace": {
+        "current_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "project_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "added_dirs": []
+      },
+      "version": "2.1.78",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 1.703048,
+        "total_duration_ms": 1307271,
+        "total_api_duration_ms": 702117,
+        "total_lines_added": 336,
+        "total_lines_removed": 218
+      },
+      "context_window": {
+        "total_input_tokens": 79,
+        "total_output_tokens": 37800,
+        "context_window_size": 200000,
+        "current_usage": {
+          "input_tokens": 1,
+          "output_tokens": 8,
+          "cache_creation_input_tokens": 745,
+          "cache_read_input_tokens": 32614
+        },
+        "used_percentage": 17,
+        "remaining_percentage": 83
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.6]\u001b[0m | \u001b[34m\ud83d\udcc1 data-intelligence-researcher\u001b[0m | \u001b[32m\ud83c\udf3f main \u00b16\u001b[0m | \u001b[90mv2.1.78\u001b[0m"
+  },
+  {
+    "timestamp": "2026-03-18T12:34:34.430905",
+    "input_data": {
+      "session_id": "2a77006e-b26c-409a-9c87-6fcffcddd4e1",
+      "transcript_path": "C:\\Users\\mrcra\\.claude\\projects\\C--Users-mrcra-Desktop-data-intelligence-researcher\\2a77006e-b26c-409a-9c87-6fcffcddd4e1.jsonl",
+      "cwd": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+      "model": {
+        "id": "claude-sonnet-4-6",
+        "display_name": "Sonnet 4.6"
+      },
+      "workspace": {
+        "current_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "project_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "added_dirs": []
+      },
+      "version": "2.1.78",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 1.83547895,
+        "total_duration_ms": 1309352,
+        "total_api_duration_ms": 821287,
+        "total_lines_added": 495,
+        "total_lines_removed": 247
+      },
+      "context_window": {
+        "total_input_tokens": 80,
+        "total_output_tokens": 45790,
+        "context_window_size": 200000,
+        "current_usage": {
+          "input_tokens": 1,
+          "output_tokens": 7990,
+          "cache_creation_input_tokens": 745,
+          "cache_read_input_tokens": 32614
+        },
+        "used_percentage": 17,
+        "remaining_percentage": 83
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.6]\u001b[0m | \u001b[34m\ud83d\udcc1 data-intelligence-researcher\u001b[0m | \u001b[32m\ud83c\udf3f main \u00b16\u001b[0m | \u001b[90mv2.1.78\u001b[0m"
+  },
+  {
+    "timestamp": "2026-03-18T12:34:37.230296",
+    "input_data": {
+      "session_id": "2a77006e-b26c-409a-9c87-6fcffcddd4e1",
+      "transcript_path": "C:\\Users\\mrcra\\.claude\\projects\\C--Users-mrcra-Desktop-data-intelligence-researcher\\2a77006e-b26c-409a-9c87-6fcffcddd4e1.jsonl",
+      "cwd": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+      "model": {
+        "id": "claude-sonnet-4-6",
+        "display_name": "Sonnet 4.6"
+      },
+      "workspace": {
+        "current_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "project_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "added_dirs": []
+      },
+      "version": "2.1.78",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 1.83547895,
+        "total_duration_ms": 1312136,
+        "total_api_duration_ms": 821287,
+        "total_lines_added": 495,
+        "total_lines_removed": 247
+      },
+      "context_window": {
+        "total_input_tokens": 80,
+        "total_output_tokens": 45790,
+        "context_window_size": 200000,
+        "current_usage": {
+          "input_tokens": 1,
+          "output_tokens": 4,
+          "cache_creation_input_tokens": 7972,
+          "cache_read_input_tokens": 33359
+        },
+        "used_percentage": 21,
+        "remaining_percentage": 79
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.6]\u001b[0m | \u001b[34m\ud83d\udcc1 data-intelligence-researcher\u001b[0m | \u001b[32m\ud83c\udf3f main \u00b16\u001b[0m | \u001b[90mv2.1.78\u001b[0m"
+  },
+  {
+    "timestamp": "2026-03-18T12:34:38.883416",
+    "input_data": {
+      "session_id": "2a77006e-b26c-409a-9c87-6fcffcddd4e1",
+      "transcript_path": "C:\\Users\\mrcra\\.claude\\projects\\C--Users-mrcra-Desktop-data-intelligence-researcher\\2a77006e-b26c-409a-9c87-6fcffcddd4e1.jsonl",
+      "cwd": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+      "model": {
+        "id": "claude-sonnet-4-6",
+        "display_name": "Sonnet 4.6"
+      },
+      "workspace": {
+        "current_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "project_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "added_dirs": []
+      },
+      "version": "2.1.78",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 1.8777696499999998,
+        "total_duration_ms": 1313788,
+        "total_api_duration_ms": 825924,
+        "total_lines_added": 495,
+        "total_lines_removed": 247
+      },
+      "context_window": {
+        "total_input_tokens": 81,
+        "total_output_tokens": 45949,
+        "context_window_size": 200000,
+        "current_usage": {
+          "input_tokens": 1,
+          "output_tokens": 159,
+          "cache_creation_input_tokens": 7972,
+          "cache_read_input_tokens": 33359
+        },
+        "used_percentage": 21,
+        "remaining_percentage": 79
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.6]\u001b[0m | \u001b[34m\ud83d\udcc1 data-intelligence-researcher\u001b[0m | \u001b[32m\ud83c\udf3f main \u00b16\u001b[0m | \u001b[90mv2.1.78\u001b[0m"
+  },
+  {
+    "timestamp": "2026-03-18T12:34:44.504126",
+    "input_data": {
+      "session_id": "2a77006e-b26c-409a-9c87-6fcffcddd4e1",
+      "transcript_path": "C:\\Users\\mrcra\\.claude\\projects\\C--Users-mrcra-Desktop-data-intelligence-researcher\\2a77006e-b26c-409a-9c87-6fcffcddd4e1.jsonl",
+      "cwd": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+      "model": {
+        "id": "claude-sonnet-4-6",
+        "display_name": "Sonnet 4.6"
+      },
+      "workspace": {
+        "current_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "project_dir": "C:\\Users\\mrcra\\Desktop\\data-intelligence-researcher",
+        "added_dirs": []
+      },
+      "version": "2.1.78",
+      "output_style": {
+        "name": "default"
+      },
+      "cost": {
+        "total_cost_usd": 1.89347195,
+        "total_duration_ms": 1319360,
+        "total_api_duration_ms": 831252,
+        "total_lines_added": 495,
+        "total_lines_removed": 247
+      },
+      "context_window": {
+        "total_input_tokens": 82,
+        "total_output_tokens": 46111,
+        "context_window_size": 200000,
+        "current_usage": {
+          "input_tokens": 1,
+          "output_tokens": 162,
+          "cache_creation_input_tokens": 232,
+          "cache_read_input_tokens": 41331
+        },
+        "used_percentage": 21,
+        "remaining_percentage": 79
+      },
+      "exceeds_200k_tokens": false
+    },
+    "status_line_output": "\u001b[36m[Sonnet 4.6]\u001b[0m | \u001b[34m\ud83d\udcc1 data-intelligence-researcher\u001b[0m | \u001b[32m\ud83c\udf3f main \u00b16\u001b[0m | \u001b[90mv2.1.78\u001b[0m"
+  }
+]
