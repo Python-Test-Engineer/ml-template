@@ -1,5 +1,7 @@
 # 🧠 Data Intelligence Researcher
 
+> *Last amended by Claude: 2026-03-19*
+
 > **AI-assisted data science — you bring the ideas, Claude does the heavy lifting.**
 
 ---
@@ -202,6 +204,13 @@ All slash commands available in this project:
 | `neuroblastoma-domain` | *activated automatically* | Provides neuroblastoma domain knowledge to inform analysis decisions |
 | `clinical-data-quality` | *activated automatically* | Applies clinical data quality rules specific to neuroblastoma datasets |
 
+### Session & Self-Improvement
+
+| Skill | Usage | What it does |
+|-------|-------|--------------|
+| `/show-convo` | `/show-convo` | Extracts all logged session CSVs and prints a summary of conversations captured in `logs/` |
+| `/rsi` | `/rsi [commands\|skills\|agents\|all]` | Recursive self-improvement — analyses past Claude sessions to detect patterns and apply targeted improvements to commands, skills, and agents (uses Claude Opus 4.6 with extended thinking) |
+
 ### Development Utilities
 
 | Skill | Usage | What it does |
@@ -239,6 +248,39 @@ Issues are reported with **severity levels** (Critical / High / Medium / Low) an
 
 ---
 
+## 🪵 Session Logging
+
+Every Claude Code conversation in this project is automatically captured to CSV — no setup required.
+
+### How it works
+
+Two hooks fire silently in the background on every session:
+
+| Hook | Trigger | What it does |
+|------|---------|--------------|
+| `log_conversation.py` | `UserPromptSubmit` — every message you send | Rewrites the session CSV with the full transcript so far |
+| `log_session_end.py` | `Stop` — when Claude finishes a turn | Appends a `SESSION_END` row to close the record |
+
+Each session is saved to:
+
+```
+logs/session_YYYYMMDD_HHMMSS_<id>.csv
+```
+
+The CSV uses a **37-column schema** tracking: event type, timestamps, message previews, token usage, tool calls, file writes, code execution outcomes, and errors.
+
+### Viewing conversations
+
+```
+/show-convo
+```
+
+Runs `.claude/scripts/extract_conversations.py`, which reads all `session_*.csv` files in `logs/`, merges them into `logs/conversation.json`, and prints a summary.
+
+> **Note:** Logging starts from the first message of each *new* session. Conversations started before the hooks were registered are not back-filled.
+
+---
+
 ## 📁 Directory Layout
 
 ```
@@ -247,6 +289,10 @@ _plans/      ← Claude's research plans (output of /plan)
 _specs/      ← Claude's technical specs (output of /spec)
 src/         ← Python scripts (written by /execute)
 data/        ← Your datasets (gitignored, never modified)
+logs/        ← Session logs (auto-created by hooks)
+  session_YYYYMMDD_HHMMSS_<id>.csv   ← one file per session, 37 columns
+  conversation.json                  ← merged view (output of /show-convo)
+  .session_starts.json               ← internal: maps session IDs to filenames
 output/      ← All results, organised by run
   PROJECT_01/
     plots/        ← PNG visualisations
@@ -257,8 +303,16 @@ output/      ← All results, organised by run
   PROJECT_02/
   ...
 .claude/
-  commands/  ← Slash command definitions (/plan, /spec, /execute, /insights, ...)
-  agents/    ← Specialist sub-agents (code-quality-reviewer, ...)
+  commands/       ← Slash command definitions (/plan, /spec, /execute, /insights, /show-convo, /rsi, ...)
+  hooks/          ← Auto-run scripts (conversation logger, session-end marker)
+    log_conversation.py    ← UserPromptSubmit hook: writes session CSV
+    log_session_end.py     ← Stop hook: appends SESSION_END row
+  scripts/        ← Utility scripts called by commands
+    event_log.py           ← Event logger module (public API for custom agents)
+    extract_conversations.py  ← Reads session CSVs → conversation.json
+  output-styles/  ← Response format presets (/style)
+  status_lines/   ← Status bar scripts (active: status_line_v1.py)
+  agents/         ← Specialist sub-agents (code-quality-reviewer, ...)
 ```
 
 ---
@@ -317,3 +371,6 @@ Plots are zero-padded and numbered in phase order:
 - **Launch a dashboard.** After `/execute` completes, run `/dashboard output/PROJECT_XX` to explore results interactively.
 - **Go deeper with insights.** Run `/insights output/PROJECT_XX/plots src` to get per-chart and synthesised analytical reports. Switch to Claude Opus 4.6 first (`/model claude-opus-4-6`) for best results.
 - **Commit cleanly.** Use `/commit-message` to get a well-structured commit message from the diff.
+- **Review past conversations.** Run `/show-convo` at any time to see a summary of all logged sessions in `logs/`.
+- **Improve the system itself.** Run `/rsi` to analyse past sessions and automatically improve commands, skills, and agents based on observed patterns. Use `/rsi commands` to target just command files, or `/rsi all` for a full sweep.
+- **Change response style.** Run `/style` to switch between Markdown Focused, Ultra Concise, Table Based, YAML, HTML, GenUI, or TTS output modes.

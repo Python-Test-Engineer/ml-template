@@ -52,6 +52,7 @@ SESSION_TIMES_FILE = Path.home() / ".claude" / "session_times.json"
 STATS_FILE = Path.home() / ".claude" / "stats-cache.json"
 PROJECTS_DIR = Path.home() / ".claude" / "projects"
 
+
 SESSION_HOURS = 5
 
 # Limits — override via env vars
@@ -322,6 +323,20 @@ def get_weekly_stats():
     return pct, weekly_tokens, limit, reset
 
 
+def get_last_prompt(session_id: str, max_len: int = 80) -> str:
+    """Read the last user prompt saved by the UserPromptSubmit hook."""
+    try:
+        prompt_file = Path.home() / ".claude" / f"last_prompt_{session_id}.txt"
+        if not prompt_file.exists():
+            return ""
+        text = prompt_file.read_text(encoding="utf-8").replace("\r\n", " ").replace("\n", " ").strip()
+        if not text:
+            return ""
+        return text[:max_len - 1] + "…" if len(text) > max_len else text
+    except Exception:
+        return ""
+
+
 def usage_row(label, dot_bar, pct, col, recycle_label):
     """Format one row:  session  ●●○○○○○○○○  22%  ♻ ~3h 45m"""
     return (
@@ -364,6 +379,9 @@ def generate_status_line(input_data):
     # Git branch & cost
     branch = get_git_branch()
     cost = get_cost(input_data)
+
+    # ── Line 0: last prompt ─────────────────────────────────────────────────
+    last_prompt = get_last_prompt(session_id)
 
     # ── Line 1 ──────────────────────────────────────────────────────────────
     if ctx_pct is not None:
@@ -408,7 +426,8 @@ def generate_status_line(input_data):
         f"{DIM}{week_reset}{RESET}  {DIM}{fmt_tokens(weekly_tok)}/{fmt_tokens(weekly_limit)}{RESET}",
     )
 
-    return "\n".join([line1, line2])
+    lines = [f"{MAGENTA}▶{RESET} {DIM}{last_prompt}{RESET}", line1, line2] if last_prompt else [line1, line2]
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------

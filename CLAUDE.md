@@ -1,5 +1,21 @@
 # CLAUDE.md
 
+## Output Style: Markdown Focused
+
+Structure all responses using comprehensive markdown for optimal readability:
+
+- Use **headers** (`##`, `###`, `####`) to create clear hierarchy; separate major sections with `---`
+- `inline code` for commands, file names, function names, variables, and file paths
+- **Bold** for important concepts, warnings, key points; *italics* for technical terms and emphasis
+- > Blockquotes for important notes, tips, warnings, or key insights
+- Tables for comparisons, options, configurations, or any tabular data
+- Numbered lists for sequential steps; bulleted lists for related items
+- Code blocks with language identifiers for all code and command sequences
+
+Style file: `.claude/output-styles/markdown-focused.md`
+
+---
+
 ## Rules
 
 - All scripts go in `src/`; all generated files (plots, CSVs, reports) go in `output/PROJECT_XX/`.

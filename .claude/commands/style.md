@@ -40,6 +40,8 @@ Ask this single question:
 
 After the user selects a style, confirm it with one short line, then apply the full style rules below for **all subsequent responses in this conversation**.
 
+Amend CLAUDE.md and settings.json to reflect this change in output style.
+
 ---
 
 ## Style Rules
