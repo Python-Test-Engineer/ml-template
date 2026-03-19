@@ -1,6 +1,6 @@
 # 🧠 Data Intelligence Researcher
 
-> *Last amended by Claude: 2026-03-19*
+> *Last amended by Claude: 2026-03-19 (hooks logging fix, /rsi change log, /insights pre-flight resize)*
 
 > **AI-assisted data science — you bring the ideas, Claude does the heavy lifting.**
 
@@ -151,9 +151,10 @@ You'll get plots, CSVs, and a report — ready to review.
 > **Requires Claude Opus 4.6.** Switch model with `/model claude-opus-4-6` before running.
 
 Claude will:
+- 📐 Check all image dimensions and auto-resize any >1500px (prevents context overflow errors)
 - 📖 Read every Python script for analytical context
 - 🖼️ Examine each chart individually with extended thinking
-- 📝 Write a per-chart `insights_<name>.md` file (resume-safe — skips already-completed charts)
+- 📝 Write a per-chart `insights_<name>.md` file with embedded image (resume-safe — skips already-completed charts)
 - 🔗 Merge all chart insights into a final `insights.md` with executive summary, cross-cutting patterns, risks table, and prioritised next steps
 - 🌐 Produce a styled, self-contained `insights.html` report
 
@@ -258,8 +259,10 @@ Two hooks fire silently in the background on every session:
 
 | Hook | Trigger | What it does |
 |------|---------|--------------|
-| `log_conversation.py` | `UserPromptSubmit` — every message you send | Rewrites the session CSV with the full transcript so far |
-| `log_session_end.py` | `Stop` — when Claude finishes a turn | Appends a `SESSION_END` row to close the record |
+| `log_conversation.py` | `UserPromptSubmit` — every message you send | Writes SESSION_START + prior history + **current user message** to the session CSV |
+| `log_session_end.py` | `Stop` — when Claude finishes a turn | **Overwrites** the CSV with the full transcript (including latest assistant response) + SESSION_END row |
+
+> Each turn is written twice: once with your message (immediately on submit), and once more with the complete exchange after Claude responds. The final CSV always reflects the full conversation.
 
 Each session is saved to:
 
@@ -292,6 +295,7 @@ data/        ← Your datasets (gitignored, never modified)
 logs/        ← Session logs (auto-created by hooks)
   session_YYYYMMDD_HHMMSS_<id>.csv   ← one file per session, 37 columns
   conversation.json                  ← merged view (output of /show-convo)
+  rsi_YYYYMMDD_HHMMSS.md             ← change log from each /rsi run
   .session_starts.json               ← internal: maps session IDs to filenames
 output/      ← All results, organised by run
   PROJECT_01/
