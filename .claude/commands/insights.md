@@ -59,6 +59,48 @@ Build a sorted list of all image files: `[filename, file_path]`.
 
 ---
 
+## Step 2.5 — Pre-flight image size check
+
+Before reading any images, check for files that could trigger the "image exceeds dimension limit" error (>2000px). Run:
+
+```bash
+uv run python -c "
+from pathlib import Path
+try:
+    from PIL import Image
+except ImportError:
+    import subprocess, sys
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'Pillow'])
+    from PIL import Image
+
+folder = Path('<IMAGE_FOLDER>')
+resized = 0
+for img in sorted(folder.glob('*')):
+    if img.suffix.lower() not in ('.png', '.jpg', '.jpeg', '.gif'):
+        continue
+    try:
+        with Image.open(img) as im:
+            w, h = im.size
+            if max(w, h) > 1500:
+                im.thumbnail((1500, 1500), Image.LANCZOS)
+                if img.suffix.lower() == '.png':
+                    im.save(img, optimize=True)
+                else:
+                    im.save(img, quality=85, optimize=True)
+                resized += 1
+                print(f'  Resized: {img.name} ({w}x{h} -> {im.size[0]}x{im.size[1]})')
+    except Exception:
+        pass
+print(f'Pre-flight complete: {resized} image(s) resized to fit within 1500px limit.')
+"
+```
+
+> This prevents context overflow errors that force mid-run session restarts. Images are resized in-place — originals are overwritten.
+
+If no images need resizing, proceed. If images were resized, confirm to the user before continuing.
+
+---
+
 ## Step 3 — Check for previously completed insights (resume support)
 
 Before starting the loop, glob `INSIGHTS_FOLDER` for existing `insights_*.md` files.

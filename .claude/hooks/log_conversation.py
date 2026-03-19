@@ -131,6 +131,13 @@ def main() -> None:
 
     state = load_state()
     csv_path = get_csv_path(session_id, state)
+
+    # Append the current prompt so it is logged as a USER_MESSAGE row.
+    # At UserPromptSubmit time, `transcript` only contains the *previous* history;
+    # the current message is only available in `prompt`.
+    if prompt:
+        transcript = list(transcript) + [{"role": "user", "content": prompt}]
+
     write_session_csv(csv_path, session_id, transcript)
 
 
