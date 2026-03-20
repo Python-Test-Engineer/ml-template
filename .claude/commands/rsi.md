@@ -86,6 +86,10 @@ try:
                     continue
                 if len(stripped) < 5:
                     continue
+                if '<command-message>' in stripped:
+                    continue
+                if len(stripped) > 200 and stripped.startswith('# ') and '## ' in stripped:
+                    continue
 
             # Truncate to 600 chars
             text = text[:600]

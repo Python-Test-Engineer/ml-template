@@ -1,1 +1,24 @@
-[]
+[
+  {
+    "session_id": "9d8bdb61-d088-47c5-8be7-9819ae773be1",
+    "start_time": "2026-03-20T06:43:38.367217+00:00",
+    "messages": [
+      {
+        "type": "user",
+        "timestamp": "2026-03-20T06:43:38.367217+00:00",
+        "content": "& c:\\Users\\mrcra\\Desktop\\data-intelligence-researcher\\.venv\\Scripts\\Activate.ps1"
+      }
+    ]
+  },
+  {
+    "session_id": "fda6fce0-387c-4110-af53-2959b1091500",
+    "start_time": "2026-03-20T07:18:34.961528+00:00",
+    "messages": [
+      {
+        "type": "user",
+        "timestamp": "2026-03-20T07:18:34.961528+00:00",
+        "content": "/show-convo"
+      }
+    ]
+  }
+]
