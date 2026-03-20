@@ -1,6 +1,6 @@
 # 🧠 Data Intelligence Researcher
 
-> *Last amended by Claude: 2026-03-19 (hooks logging fix, /rsi change log, /insights pre-flight resize)*
+> *Last amended by Claude: 2026-03-20 (added /solve command)*
 
 > **AI-assisted data science — you bring the ideas, Claude does the heavy lifting.**
 
@@ -16,9 +16,10 @@
 3.  /spec     _plans/my-idea.md
 4.  /execute  _specs/my-idea.md
 5.  /insights output/PROJECT_XX/plots src   ← deep insight report
+6.  /solve    output/PROJECT_XX <question>  ← ask anything about the results
 ```
 
-That's it. Claude profiles your data, writes the code, runs it, saves the results, and synthesises deep insights. No boilerplate. No setup. Just answers.
+That's it. Claude profiles your data, writes the code, runs it, saves the results, synthesises deep insights, and answers your questions grounded in the evidence. No boilerplate. No setup. Just answers.
 
 ---
 
@@ -67,6 +68,16 @@ That's it. Claude profiles your data, writes the code, runs it, saves the result
 │      script, synthesises deep insights,   insights/            │
 │      and writes insights.md + .html                            │
 │      with per-chart and merged reports                          │
+│                                                                 │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼  /solve output/PROJECT_XX <your question>
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│   ❓ Claude reads all charts, insight    output/               │
+│      reports, and stats then answers      answer_<slug>.md     │
+│      your question with cited evidence                          │
+│      and saves the answer to file                               │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -162,6 +173,32 @@ All output goes to `output/PROJECT_XX/insights/`.
 
 ---
 
+## ❓ Step 5 — `/solve` (Ask anything about the results)
+
+```
+/solve output/PROJECT_XX Why did revenue drop in April?
+```
+
+> **Requires Claude Opus 4.6** with extended thinking (`ultrathink`). Runs automatically on the correct model.
+
+Claude will:
+- 📂 Load all text evidence: `insights/insights.md`, per-chart `insights_*.md`, `summary_stats.csv`, and the narrative report
+- 🖼️ Read every chart image relevant to your question (or all charts for broad questions)
+- 🧠 Synthesise a fully cited, evidence-grounded answer with supporting evidence, confidence rating, caveats, and a suggested follow-up analysis
+- 💾 Save the answer to `output/answer_<slug>.md` (slug = 4 key words from your question)
+
+**Example questions:**
+
+```
+/solve output/PROJECT_01 Why did revenue drop in April?
+/solve output/PROJECT_01 Which sales rep is underperforming and why?
+/solve output/PROJECT_01 What is our biggest growth opportunity?
+```
+
+If you omit the folder, Claude will list available `output/PROJECT_*` folders and ask you to pick one.
+
+---
+
 ## 🛠️ All Skills Reference
 
 All slash commands available in this project:
@@ -179,6 +216,7 @@ All slash commands available in this project:
 | Skill | Usage | What it does |
 |-------|-------|--------------|
 | `/insights` | `/insights <image_folder> <python_folder>` | Reads every chart and Python script, synthesises deep per-chart insights, then merges into `insights.md` + `insights.html`. Requires Claude Opus 4.6. Outputs go to `output/PROJECT_XX/insights/`. |
+| `/solve` | `/solve <folder> <question>` | Answers any question grounded in the charts, insight reports, and stats from a project output folder. Uses Claude Opus 4.6 with ultrathink. Saves the cited answer to `output/answer_<slug>.md`. |
 | `/dashboard` | `/dashboard output/PROJECT_XX` | Builds and launches an interactive Shiny Dash dashboard from a completed project output folder |
 | `/style` | `/style` | Select and apply an output style for the current conversation |
 
@@ -378,3 +416,4 @@ Plots are zero-padded and numbered in phase order:
 - **Review past conversations.** Run `/show-convo` at any time to see a summary of all logged sessions in `logs/`.
 - **Improve the system itself.** Run `/rsi` to analyse past sessions and automatically improve commands, skills, and agents based on observed patterns. Use `/rsi commands` to target just command files, or `/rsi all` for a full sweep.
 - **Change response style.** Run `/style` to switch between Markdown Focused, Ultra Concise, Table Based, YAML, HTML, GenUI, or TTS output modes.
+- **Ask questions about your results.** Run `/solve output/PROJECT_XX <question>` to get a fully cited, evidence-grounded answer from your charts and reports. Answers are saved to `output/answer_<slug>.md` for future reference.
