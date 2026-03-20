@@ -1,5 +1,6 @@
 ---
 description: "Build and launch an interactive Shiny dashboard from a PROJECT_XX output folder. Usage: /dashboard"
+argument-hint: "output/PROJECT_XX"
 allowed-tools: Read, Glob, Grep, Bash(uv run python *), Bash(uv add *), Write, AskUserQuestion
 ---
 

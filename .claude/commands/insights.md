@@ -1,8 +1,7 @@
 ---
 description: "Analyse images in a folder to generate deep business & data insights report. Usage: /insights <image_folder>"
 allowed-tools: Read, Glob, Grep, Write, Edit, Bash(uv run python *), AskUserQuestion
-hint: "Provide path to the image folder"
-argument: "image_folder — REQUIRED"
+argument-hint: "output/PROJECT_XX/images"
 model: Opus
 ---
 
