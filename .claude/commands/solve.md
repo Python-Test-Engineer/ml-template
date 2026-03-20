@@ -1,16 +1,20 @@
 ---
-description: "Answer a question grounded in the charts, plots, and reports from the latest PROJECT_XX output. Usage: /solve <question>"
+description: "Answer a question grounded in the charts, plots, and reports in a given output folder. Usage: /solve <folder> <question>"
 allowed-tools: Read, Glob, Grep, Write, Bash(uv run python *)
-argument-hint: "Why did revenue drop in Q3?"
+argument-hint: "output/PROJECT_01 Why did revenue drop in Q3?"
+model: opus
 ---
 
-**Argument required:** `<question>`
-Example: `/solve Which product category has the highest margin risk?`
+**Two arguments required:** `<folder> <question>`
+Example: `/solve output/PROJECT_01 Which product category has the highest margin risk?`
 
 Parse `$ARGUMENTS`:
-- `QUESTION` — the full question text (everything after the command)
+- `FOLDER` — first token (the path to the project output folder)
+- `QUESTION` — everything after the first token (the full question text)
 
-If `QUESTION` is empty, ask the user what they want to know.
+If either argument is missing:
+- If `FOLDER` is missing: glob `output/PROJECT_*`, list available folders, and ask the user to pick one
+- If `QUESTION` is missing: ask the user what they want to know
 
 ---
 
@@ -20,17 +24,17 @@ You are a senior data analyst. Your job is to answer `QUESTION` using **only** t
 
 ---
 
-## Step 1 — Locate the output folder
+## Step 1 — Set the output folder
 
-Set `PROJECT_FOLDER` to `C:\Users\mrcra\Desktop\data-intelligence-researcher\output\PROJECT_01`.
+Set `PROJECT_FOLDER` to the `FOLDER` argument provided by the user.
 
-Use this absolute path for all file reads in subsequent steps.
+Use this path as the base for all file reads in subsequent steps.
 
 ---
 
 ## Step 2 — Inventory available evidence
 
-Scan `PROJECT_FOLDER` for the following files and build a manifest. Use the full absolute path `C:\Users\mrcra\Desktop\data-intelligence-researcher\output\PROJECT_01\` as the base for all globs:
+Scan `PROJECT_FOLDER` for the following files and build a manifest using `FOLDER` as the base path for all globs:
 
 | Category | Path (relative to PROJECT_FOLDER) |
 |----------|----------------------------------|
@@ -68,7 +72,7 @@ From the chart manifest, select the PNG files most likely to contain visual evid
 
 ## Step 5 — Synthesise and answer
 
-think
+ultrathink
 
 Using all loaded text and image evidence, construct a focused, evidence-grounded answer to `QUESTION`.
 
